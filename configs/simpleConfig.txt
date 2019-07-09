@@ -1,0 +1,23 @@
+#define your params here, #is comment
+
+#Global Params (eta bins, centrality bins, etc)
+ETABINSLOW,0.0,1.0
+ETABINSHIGH,1.0,2.0
+CENTBINSLOW,0,10,30,50
+CENTBINSHIGH,10,30,50,100
+
+#Define your constituent tree, type (array or vector), double or float, and var names
+RCINPUT,pfcandAnalyzer/pfTree,vector,float,,pfPt,pfPhi,pfEta
+
+#Define random cone params
+NRC,4
+RCR,0.4
+
+#Define your centrality tree, table file, and variable(s), 
+CENTINPUT,hiEvtAnalyzer/HiTree,input/cmsHiBinToCent.txt,int,hiBin
+
+#Define MC Area
+NRHOMC,1000
+
+#Define your rho tree, array or vector, float or double, rhoVar, etaVar or etaVarMin and Max, etc.
+RHOINPUT,hiPuRhoR3Analyzer/t,vector,double,NONE,rho,etaMin,etaMax
