@@ -33,7 +33,14 @@ class paramPropagator{
   void setCentBinsHigh(std::string inStr);
   void setNRC(std::string inStr);
   void setRCInput(std::string inStr);
+  void setImbInput(std::string inStr);
   void setRCR(std::string inStr);
+  void setJetR(std::string inStr);
+  void setPthats(std::string inStr);
+  void setPthatWeights(std::string inStr);
+  void setDoNCollWeights(std::string inStr);
+  void setPtCut(std::string inStr);
+  void setIsMC(std::string inStr);
   void setCentInput(std::string inStr);
   void setNRhoMC(std::string inStr);
   void setRhoInput(std::string inStr);
@@ -47,12 +54,19 @@ class paramPropagator{
   std::string getCentBinsLowStr(){return paramFound["CENTBINSLOW"];}
   std::string getCentBinsHighStr(){return paramFound["CENTBINSHIGH"];}
   std::string getNRCStr(){return paramFound["NRC"];}
+  std::string getNImbStr(){return paramFound["NIMB"];}
   std::string getRCInputStr(){return paramFound["RCINPUT"];}
   std::string getRCRStr(){return paramFound["RCR"];}
+  std::string getJetRStr(){return paramFound["JETR"];}
+  std::string getPthatStr(){return paramFound["PTHATS"];}
+  std::string getPthatWeightsStr(){return paramFound["PTHATWEIGHTS"];}
+  std::string getDoNCollWeightsStr(){return paramFound["DONCOLLWEIGHTS"];}
+  std::string getPtCutStr(){return paramFound["PTCUT"];}
+  std::string getIsMCStr(){return paramFound["ISMC"];}
   std::string getCentInputStr(){return paramFound["CENTINPUT"];}
   std::string getNRhoMCStr(){return paramFound["NRHOMC"];}
   std::string getRhoInputStr(){return paramFound["RHOINPUT"];}
-
+  
   std::map<std::string, std::string> getParamFound(){return paramFound;}
   
   Int_t getNEtaBins(){return nEtaBins;}
@@ -73,15 +87,40 @@ class paramPropagator{
 
   Int_t getNRC(){return nRC;}
   Double_t getRCR(){return rcR;}
+  Double_t getJetR(){return jetR;}
+  std::vector<Double_t> getPthats(){return pthats;}
+  std::vector<Double_t> getPthatWeights(){return pthatWeights;}
+  Bool_t getDoNCollWeights(){return doNCollWeights;}
+  Double_t getPtCut(){return ptCut;}
+  Bool_t getIsMC(){return isMC;}
 
   std::string getRCInStr(){return rcInStr;}
   bool getIsVectorRC(){return isVectorRC;}
   bool getIsDoubleRC(){return isDoubleRC;}
 
+  std::string getImbInStr(){return imbInStr;}
+  bool getIsVectorImb(){return isVectorImb;}
+  bool getIsDoubleImb(){return isDoubleImb;}
+
   std::string getRCNStr(){return rcNStr;}
   std::string getRCPtStr(){return rcPtStr;}
   std::string getRCPhiStr(){return rcPhiStr;}
   std::string getRCEtaStr(){return rcEtaStr;}
+
+  std::string getPthatValStr(){return imbPthatStr;}
+
+  std::string getImbNStr(){return imbNStr;}
+  std::string getImbPtStr(){return imbPtStr;}
+  std::string getImbPhiStr(){return imbPhiStr;}
+  std::string getImbEtaStr(){return imbEtaStr;}
+  std::string getImbRefPtStr(){return imbRefPtStr;}
+  std::string getImbWeightStr(){return imbWeightStr;}
+
+  std::string getImbConstNStr(){return imbConstNStr;}
+  std::string getImbConstPtStr(){return imbConstPtStr;}
+  std::string getImbConstPhiStr(){return imbConstPhiStr;}
+  std::string getImbConstEtaStr(){return imbConstEtaStr;}
+  std::string getImbConstjtposStr(){return imbConstjtposStr;}
 
   std::string getCentInStr(){return centInStr;}
   std::string getCentTableStr(){return centTableStr;}
@@ -99,9 +138,9 @@ class paramPropagator{
   std::string getRhoEtaMaxStr(){return rhoEtaMaxStr;}
 
  private:
-  static const Int_t nParams = 10;
-  std::string params[nParams] = {"ETABINSLOW", "ETABINSHIGH", "CENTBINSLOW", "CENTBINSHIGH", "NRC", "RCINPUT", "RCR", "CENTINPUT", "NRHOMC", "RHOINPUT"};
-  std::string paramDefaults[nParams] = {"0,1", "1,2", "0,30", "30,100", "1", "", "0.4", "", "100", ""};
+  static const Int_t nParams = 17;
+  std::string params[nParams] = {"ETABINSLOW", "ETABINSHIGH", "CENTBINSLOW", "CENTBINSHIGH", "NRC", "RCINPUT", "RCR", "JETR", "PTHATS", "PTHATWEIGHTS", "DONCOLLWEIGHTS", "PTCUT", "ISMC", "CENTINPUT", "NRHOMC", "RHOINPUT", "IMBINPUT"};
+  std::string paramDefaults[nParams] = {"0,1", "1,2", "0,30", "30,100", "1", "", "0.4", "0.4", "1", "0.0", "0", "", "100", "", ""};
   std::map<std::string, std::string> paramFound;
       
   Int_t nEtaBins;
@@ -114,7 +153,14 @@ class paramPropagator{
   
   Int_t nRC;
   Double_t rcR;
-
+  Double_t jetR;
+  std::string pthatStr;
+  std::vector<Double_t> pthats;
+  std::vector<Double_t> pthatWeights;
+  Bool_t doNCollWeights;
+  Double_t ptCut;
+  Bool_t isMC;
+  
   std::string rcInStr;
   bool isVectorRC;
   bool isDoubleRC;
@@ -122,6 +168,22 @@ class paramPropagator{
   std::string rcPtStr;
   std::string rcPhiStr;
   std::string rcEtaStr;
+
+  std::string imbInStr;
+  bool isVectorImb;
+  bool isDoubleImb;
+  std::string imbPthatStr;
+  std::string imbNStr;
+  std::string imbPtStr;
+  std::string imbPhiStr;
+  std::string imbEtaStr;
+  std::string imbRefPtStr;
+  std::string imbWeightStr;
+  std::string imbConstNStr;
+  std::string imbConstPtStr;
+  std::string imbConstPhiStr;
+  std::string imbConstEtaStr;
+  std::string imbConstjtposStr;
 
   std::string centInStr;
   std::string centTableStr;
@@ -152,7 +214,13 @@ paramPropagator::paramPropagator()
 
   nRC = 0;
   rcR = -1;
-
+  jetR = -1;
+  pthats.clear();
+  pthatWeights.clear();
+  doNCollWeights = false;
+  ptCut = 0.0;
+  isMC = false;
+  
   rcInStr = "";
   isVectorRC = false;
   isDoubleRC = false;
@@ -160,6 +228,22 @@ paramPropagator::paramPropagator()
   rcPtStr = "";
   rcPhiStr = "";
   rcEtaStr = "";
+
+  imbInStr = "";
+  isVectorImb = false;
+  isDoubleImb = false;
+  imbPthatStr = "";
+  imbNStr = "";
+  imbPtStr = "";
+  imbPhiStr = "";
+  imbEtaStr = "";
+  imbRefPtStr = "";
+  imbWeightStr = "";
+  imbConstNStr = "";
+  imbConstPtStr = "";
+  imbConstPhiStr = "";
+  imbConstEtaStr = "";
+  imbConstjtposStr = "";
 
   centInStr = "";
   centTableStr = "";
@@ -184,11 +268,12 @@ void paramPropagator::setupFromTXT(std::string inFileName)
   if(!checkFile(inFileName) || inFileName.find(".txt") == std::string::npos){
     std::cout << "WARNING PARAMPROPAGATOR: Input txt file \'" << inFileName << "\' is not valid. return uninitialized" << std::endl;    
     return;
-  }
-
+  }  
+  
   std::ifstream inFile(inFileName.c_str());
   std::string tempStr;
   while(std::getline(inFile, tempStr)){
+    std::cout << tempStr << std::endl;
     setArbitraryParam(tempStr);
   }
   inFile.close();  
@@ -241,9 +326,16 @@ void paramPropagator::setArbitraryParam(std::string inStr)
   else if(isStrSame(tempVect[0], "NRC")) setNRC(inStr);
   else if(isStrSame(tempVect[0], "RCINPUT")) setRCInput(inStr);
   else if(isStrSame(tempVect[0], "RCR")) setRCR(inStr);
+  else if(isStrSame(tempVect[0], "JETR")) setJetR(inStr);
+  else if(isStrSame(tempVect[0], "PTHATS")) setPthats(inStr);
+  else if(isStrSame(tempVect[0], "PTHATWEIGHTS")) setPthatWeights(inStr);
+  else if(isStrSame(tempVect[0], "DONCOLLWEIGHTS")) setDoNCollWeights(inStr);
+  else if(isStrSame(tempVect[0], "PTCUT")) setPtCut(inStr);
+  else if(isStrSame(tempVect[0], "ISMC")) setIsMC(inStr);
   else if(isStrSame(tempVect[0], "CENTINPUT")) setCentInput(inStr);
   else if(isStrSame(tempVect[0], "NRHOMC")) setNRhoMC(inStr);
   else if(isStrSame(tempVect[0], "RHOINPUT")) setRhoInput(inStr);
+  else if(isStrSame(tempVect[0], "IMBINPUT")) setImbInput(inStr);
   else{
     std::cout << "WARNING PARAMPROPAGATOR: Input param \'" << tempVect[0] << "\' is not valid. return" << std::endl;
     return;
@@ -333,7 +425,7 @@ void paramPropagator::setNRC(std::string inStr)
 void paramPropagator::setRCInput(std::string inStr)
 {
   std::vector<std::string> tempVect = strToVect(inStr);
-  if(tempVect.size() != 6 && tempVect.size() != 7) std::cout << "WARNING PARAMPROPAGATOR: RCINPUT IS INVALID SIZE. return 1";
+  if(tempVect.size() != 7 && tempVect.size() != 8) std::cout << "WARNING PARAMPROPAGATOR: RCINPUT IS INVALID SIZE. return 1";
   else{
     rcInStr = tempVect[1];
     if(isStrSame("vector", tempVect[2])) isVectorRC = true;
@@ -342,13 +434,41 @@ void paramPropagator::setRCInput(std::string inStr)
     Int_t restPos = 4;
     if(!isVectorRC){
       rcNStr = tempVect[restPos];
-      ++restPos;
     }
-    rcPtStr = tempVect[restPos];
-    rcPhiStr = tempVect[restPos+1];
-    rcEtaStr = tempVect[restPos+2];    
+    rcPtStr = tempVect[restPos+1];
+    rcPhiStr = tempVect[restPos+2];
+    rcEtaStr = tempVect[restPos+3];    
   }
 	
+  return;
+}
+
+void paramPropagator::setImbInput(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() != 16 && tempVect.size() != 0) std::cout << "WARNING PARAMPROPAGATOR: IMBINPUT IS INVALID SIZE. return 1";
+  else{
+    imbInStr = tempVect[1];
+    if(isStrSame("vector", tempVect[2])) isVectorImb = true;
+    if(isStrSame("double", tempVect[3])) isDoubleImb = true;
+      
+    imbPthatStr = tempVect[4];
+
+    imbNStr = tempVect[5];
+    imbPtStr = tempVect[6];
+    imbPhiStr = tempVect[7];
+    imbEtaStr = tempVect[8];    
+    imbRefPtStr = tempVect[9];
+    imbWeightStr = tempVect[10];    
+
+    imbConstNStr = tempVect[11];
+
+    imbConstPtStr = tempVect[12];
+    imbConstPhiStr = tempVect[13];
+    imbConstEtaStr = tempVect[14];    
+    imbConstjtposStr = tempVect[15];    
+  }
+
   return;
 }
 
@@ -360,6 +480,65 @@ void paramPropagator::setRCR(std::string inStr)
   
   return;
 }
+
+void paramPropagator::setJetR(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() == 1) std::cout << "WARNING PARAMPROPAGATOR: JETR HAS NO VALUES, \'" << inStr << "\'. return 1" << std::endl;
+  else jetR = std::stod(tempVect[1]);
+  
+  return;
+}
+
+void paramPropagator::setPthats(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() == 1) std::cout << "WARNING PARAMPROPAGATOR: PTHATS HAS NO VALUES, \'" << inStr << "\'. return 1" << std::endl;
+  for(unsigned int pI = 1; pI < tempVect.size(); ++pI){
+    pthats.push_back(std::stod(tempVect[pI]));
+  }
+  
+  return;
+}
+
+void paramPropagator::setPthatWeights(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() == 1) std::cout << "WARNING PARAMPROPAGATOR: PTHATWEIGHTS HAS NO VALUES, \'" << inStr << "\'. return 1" << std::endl;
+  for(unsigned int pI = 1; pI < tempVect.size(); ++pI){
+    pthatWeights.push_back(std::stod(tempVect[pI]));
+  }
+  
+  return;
+}
+
+void paramPropagator::setDoNCollWeights(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() == 1) std::cout << "WARNING PARAMPROPAGATOR: DONCOLLWEIGHTS HAS NO VALUES, \'" << inStr << "\'. return 1" << std::endl;
+  else doNCollWeights = std::stoi(tempVect[1]);
+  
+  return;
+}
+
+void paramPropagator::setPtCut(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() == 1) std::cout << "WARNING PARAMPROPAGATOR: PTCUT HAS NO VALUES, \'" << inStr << "\'. return 1" << std::endl;
+  else ptCut = std::stod(tempVect[1]);
+  
+  return;
+}
+
+void paramPropagator::setIsMC(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() == 1) std::cout << "WARNING PARAMPROPAGATOR: ISMC HAS NO VALUES, \'" << inStr << "\'. return 1" << std::endl;
+  else isMC = (bool)(std::stoi(tempVect[1]));
+  
+  return;
+}
+
 
 bool paramPropagator::checkNBinsMax(std::string binStr, int nBins, int nBinsMax)
 {

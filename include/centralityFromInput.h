@@ -12,8 +12,10 @@
 class centralityFromInput
 {
  public:
+  centralityFromInput(){return;}
   centralityFromInput(std::string inTableFile);
   ~centralityFromInput(){};
+  void SetTable(std::string inTableFile);
 
   double getCent(double inVal);
 
@@ -24,6 +26,11 @@ class centralityFromInput
 };
 
 centralityFromInput::centralityFromInput(std::string inTableFile)
+{
+  SetTable(inTableFile);
+}
+
+void centralityFromInput::SetTable(std::string inTableFile)
 {
   if(!checkFile(inTableFile) || inTableFile.find(".txt") == std::string::npos){
     std::cout << "CENTRALITYFROMINPUT: Given table \'" << inTableFile << "\' is invalid. return isInit=false" << std::endl;

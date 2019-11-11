@@ -1,25 +1,10 @@
 #ifndef STRINGUTIL_H
 #define STRINGUTIL_H
 
+//cpp
+#include <iostream>
 #include <string>
 #include <vector>
-
-std::vector<std::string> strToVect(std::string inStr)
-{
-  std::vector<std::string> outVect;
-  inStr = inStr + ",";
-  while(inStr.find(",,") != std::string::npos){inStr.replace(inStr.find(",,"), 2, ",");}
-  while(inStr.find(" ") != std::string::npos){inStr.replace(inStr.find(" "), 1, "");}
-
-  if(inStr.size() == 1) return outVect;
-
-  while(inStr.find(",") != std::string::npos){
-    outVect.push_back(inStr.substr(0, inStr.find(",")));    
-    inStr.replace(0, inStr.find(",")+1, "");
-  }
-  
-  return outVect;
-}
 
 bool isStrSame(std::string inStr1, std::string inStr2)
 {
@@ -141,5 +126,53 @@ std::string getRValStr(const std::string inStr)
   return rVal;
 }
 
+
+std::vector<std::string> commaSepStringToVect(std::string inStr)
+{
+  std::vector<std::string> retVect;
+
+  inStr = inStr + ",";
+  while(inStr.find(",,") != std::string::npos){inStr.replace(inStr.find(",,"), 2, ",");}
+  if(inStr.size() != 0){
+    while(inStr.substr(0,1).find(",") != std::string::npos){
+      inStr.replace(0, 1, "");
+      if(inStr.size() == 0) break;
+    }
+  }
+
+  while(inStr.find(",") != std::string::npos){
+    retVect.push_back(inStr.substr(0, inStr.find(",")));
+    inStr.replace(0, inStr.find(",")+1, "");
+  }
+  
+  return retVect;
+}
+
+
+bool vectContainsStr(std::string inStr, std::vector<std::string>* inVect)
+{
+  bool isInVect = false;
+  if(inStr.size() != 0){
+    for(unsigned int vI = 0; vI < inVect->size(); ++vI){
+      if(isStrSame(inStr, (*inVect)[vI])){
+	isInVect = true;
+	break;
+      }
+    }
+  }
+  return isInVect;
+}
+
+std::vector<std::string> strToVect(std::string inStr)
+{
+  std::vector<std::string> retVect;
+  while(inStr.find(",") != std::string::npos){
+    retVect.push_back(inStr.substr(0, inStr.find(",")));
+    inStr.replace(0, inStr.find(",")+1, "");
+  }
+  if(inStr.size() != 0) retVect.push_back(inStr);
+
+  return retVect;
+}
 
 #endif

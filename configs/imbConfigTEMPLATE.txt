@@ -1,0 +1,9 @@
+#define your params here, #is comment
+
+#Define your jet tree, type (array or vector), double or float, and var names
+IMBINPUT,akRVALPFJetAnalyzer/t,array,float,pthat,nref,jtpt,jtphi,jteta,refpt,,,,,,
+
+PTHATS,30,80,170,280,370,540
+PTHATWEIGHTS,1,0.0128952,0.000294747,.0000395835,.0000114137,.00000192733
+
+DONCOLLWEIGHTS=NCOLLVAL

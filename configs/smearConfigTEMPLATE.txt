@@ -1,0 +1,12 @@
+#define your params here, #is comment
+
+#Define your jet tree, type (array or vector), double or float, and var names
+IMBINPUT,akCs4PU3PFFlowJetAnalyzer/t,array,float,pthat,nref,jtpt,jtphi,jteta,refpt,,,,,,,
+
+CENTINPUT,hiEvtAnalyzer/HiTree,input/cmsHiBinToCent.txt,int,hiBin
+
+PTHATS,30,80,170,280,370,540
+PTHATWEIGHTS,1,0.00862041,0.000192516,.0000113492,.00000252377,.000000407815,
+
+DONCOLLWEIGHTS,1
+

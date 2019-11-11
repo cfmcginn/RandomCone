@@ -31,8 +31,8 @@ int makeHistRC(const std::string inFileName)
   std::cout << "LINE: " << __LINE__ << std::endl;
 
   Float_t ptRC_, ptRhoRC_, ptSubRC_;
-  UInt_t centPos_, etaPos_;
-  Int_t centRC_;
+  UInt_t etaPos_;
+  Int_t centRC_, centPos_;
 
   TFile* inFile_p = new TFile(inFileName.c_str(), "READ");
   paramPropagator params;
@@ -120,7 +120,6 @@ int makeHistRC(const std::string inFileName)
   
   inFile_p->Close();
   delete inFile_p;
-
 
   std::vector<double> centBinsLow = params.getCentBinsLow();
   std::vector<double> centBinsHigh = params.getCentBinsHigh();

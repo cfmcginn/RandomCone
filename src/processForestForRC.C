@@ -9,6 +9,7 @@
 #include "TDatime.h"
 #include "TDirectoryFile.h"
 #include "TFile.h"
+#include "TLorentzVector.h"
 #include "TNamed.h"
 #include "TRandom3.h"
 #include "TTree.h"
@@ -17,6 +18,7 @@
 #include "include/centralityFromInput.h"
 #include "include/checkMakeDir.h"
 #include "include/etaPhiFunc.h"
+#include "include/ncollFunctions_5TeV.h"
 #include "include/paramPropagator.h"
 #include "include/plotUtilities.h"
 #include "include/returnRootFileContentsList.h"
@@ -43,7 +45,6 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
   }
 
   //DEFINE PARAMS AND SOME DEFAULTS
-
   paramPropagator params;
   params.setupFromTXT(paramFileName);
 
@@ -69,6 +70,9 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
  
   Int_t nRC = params.getNRC();
   Double_t rcR = params.getRCR();
+  Double_t ptCut = params.getPtCut();
+
+  Bool_t doNCollWeights = params.getDoNCollWeights();
   
   std::string rcInStr = params.getRCInStr();
   bool isVectorRC = params.getIsVectorRC();
@@ -173,26 +177,30 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
   if(outFileName.find(".") != std::string::npos) outFileName = outFileName.substr(0, outFileName.rfind("."));
   checkMakeDir("output");
   checkMakeDir("output/" + dateStr);  
-  outFileName = "output/" + dateStr + "/" + outFileName + "_RCForest_" + dateStr + ".root";  
+  outFileName = "output/" + dateStr + "/" + outFileName + "_RCR" + prettyString(rcR, 1, true) + "_PtCut" + prettyString(ptCut, 2, true) + "_RCForest_" + dateStr + ".root";  
 
   //Declare outFile, outTree, and tnamed
   TFile* outFile_p = new TFile(outFileName.c_str(), "RECREATE");
   TTree* rcTreeOut_p = new TTree("rcTree", "");
   TDirectoryFile* rcParamDir_p = (TDirectoryFile*)outFile_p->mkdir("rcParamDir");
 
-  UInt_t outEntry, etaPos = 0, centPos = 0;
-  Int_t centRC;
-  Float_t etaRC, phiRC, ptRC, ptRhoRC, ptSubRC; 
+  UInt_t outEntry, etaPos = 0;
+  Int_t centRC, centPos;
+  Float_t weight, etaRC, phiRC, ptRC, ptRhoRC, ptSubRC, pt4VecRC, pt4VecRhoRC, pt4VecSubRC;
   
   rcTreeOut_p->Branch("outEntry", &outEntry, "outEntry/i");
+  rcTreeOut_p->Branch("weight", &weight, "weight/F");
   rcTreeOut_p->Branch("etaPos", &etaPos, "etaPos/i");
-  rcTreeOut_p->Branch("centPos", &centPos, "centPos/i");
+  rcTreeOut_p->Branch("centPos", &centPos, "centPos/I");
   rcTreeOut_p->Branch("centRC", &centRC, "centRC/I");
   rcTreeOut_p->Branch("etaRC", &etaRC, "etaRC/F");
   rcTreeOut_p->Branch("phiRC", &phiRC, "phiRC/F");
   rcTreeOut_p->Branch("ptRC", &ptRC, "ptRC/F");
   rcTreeOut_p->Branch("ptRhoRC", &ptRhoRC, "ptRhoRC/F");
   rcTreeOut_p->Branch("ptSubRC", &ptSubRC, "ptSubRC/F");
+  rcTreeOut_p->Branch("pt4VecRC", &pt4VecRC, "pt4VecRC/F");
+  rcTreeOut_p->Branch("pt4VecRhoRC", &pt4VecRhoRC, "pt4VecRhoRC/F");
+  rcTreeOut_p->Branch("pt4VecSubRC", &pt4VecSubRC, "pt4VecSubRC/F");
   
   std::vector<std::string> rcBranchNames = {rcPtStr, rcPhiStr, rcEtaStr};
   if(!isVectorRC) rcBranchNames.push_back(rcNStr);
@@ -235,7 +243,6 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
     }
     rcTreeIn_p->SetBranchStatus(iter.c_str(), 1);
   }
-
 
   TTree* centTreeIn_p = (TTree*)inFile_p->Get(centInStr.c_str());
   TObjArray* centListOfBranchesArr = centTreeIn_p->GetListOfBranches();
@@ -350,6 +357,35 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
   const Int_t nEntries = rcTreeIn_p->GetEntries();
   const Int_t nDiv = TMath::Max(1, nEntries/200);
 
+  std::vector<double> centVals, centWeights, centWeightsJustNColl;
+  if(doNCollWeights){
+    for(Int_t cI = 0; cI < 100; ++cI){
+      centVals.push_back(0.0);
+    }
+    std::cout << "Pre-Processing " << nEntries << "..." << std::endl;
+    for(Int_t entry = 0; entry < nEntries; ++entry){
+      if(entry%nDiv == 0) std::cout << " Entry " << entry << "/" << nEntries << std::endl;
+      centTreeIn_p->GetEntry(entry);
+      int centVal = 0;
+      
+      for(unsigned int cI = 0; cI < centVarStr.size(); ++cI){
+        if(isStrSame(centVarType, "int")) centVal += centVarI[cI];
+        else if(isStrSame(centVarType, "float")) centVal += centVarF[cI];
+        else if(isStrSame(centVarType, "double")) centVal += centVarD[cI];
+      }
+      centRC = (Int_t)centTable.getCent(centVal);
+
+      ++(centVals[centRC]);
+    }
+
+    for(Int_t cI = 0; cI < 100; ++cI){
+      double centWeightVal = (findNcoll_Renorm(cI*2) + findNcoll_Renorm(cI*2+1))/2.;
+      centWeightsJustNColl.push_back(centWeightVal);
+      centWeightVal /= centVals[cI];
+      centWeights.push_back(centWeightVal);
+    }
+  }
+  
   const Double_t rhoArea = TMath::Pi()*rcR*rcR/((Double_t)nRhoMC);
   
   std::cout << "Processing " << nEntries << "..." << std::endl;
@@ -384,7 +420,7 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
 	}
       }
     }
-    else{
+    else if(isDoubleRC){
       for(Int_t pI = 0; pI < nPart_; ++pI){
 	ptF_[pI] = (Float_t)ptD_[pI];
 	phiF_[pI] = (Float_t)phiD_[pI];
@@ -454,14 +490,20 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
       else if(isStrSame(centVarType, "float")) centVal += centVarF[cI];
       else if(isStrSame(centVarType, "double")) centVal += centVarD[cI];
     }
-
+   
     centRC = centTable.getCent(centVal);
+    weight = 1.0;
+    if(doNCollWeights) weight = centWeights[centRC];
+
+    centPos = -1;
     for(Int_t cI = 0; cI < nCentBins; ++cI){
-      if(centBinsLow[cI] <= centRC && centRC < centBinsHigh[cI]){
+      if(centBinsLow[cI] <= centRC && centRC < centBinsHigh[cI]){       
 	centPos = cI;
 	break;
       }
     }
+
+    if(centPos < 0) continue;
 
     for(unsigned int valI = 0; valI < etaVals.size(); ++valI){
       for(Int_t eI = 0; eI < nEtaBins; ++eI){
@@ -475,9 +517,17 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
       phiRC = phiVals[valI];
       ptRC = 0;
       ptRhoRC = 0;
-      
+
+      TLorentzVector totalParticleTL(0.0, 0.0, 0.0, 0.0);
+      TLorentzVector totalRhoTL(0.0, 0.0, 0.0, 0.0);
+      TLorentzVector tempTL;
       for(Int_t pI = 0; pI < nPart_; ++pI){
-	if(getDR(etaRC, phiRC, etaF_[pI], phiF_[pI]) < rcR) ptRC += ptF_[pI];
+	if(ptF_[pI] < ptCut) continue;
+	if(getDR(etaRC, phiRC, etaF_[pI], phiF_[pI]) < rcR){
+	  ptRC += ptF_[pI];
+	  tempTL.SetPtEtaPhiM(ptF_[pI], etaF_[pI], phiF_[pI], 0.0);
+	  totalParticleTL += tempTL;
+	}
       }
 
       Int_t nRhoCounter = 0;
@@ -497,13 +547,21 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
 	  std::cout << "ERROR: rhoVal \'" << rhoVal << "\' for eta \'" << etaRho << "\' is negative. return 1" <<std::endl;
 	  return 1;
 	}
-	
-	ptRhoRC += rhoArea*rhoVal;
+
+	double pTOfEst = rhoArea*rhoVal;
+	ptRhoRC += pTOfEst;
+
+	tempTL.SetPtEtaPhiM(pTOfEst, etaRho, phiRho, 0.0);
+	totalRhoTL += tempTL;	
 	
 	++nRhoCounter;
       }
 
+      pt4VecRC = totalParticleTL.Pt();
+      pt4VecRhoRC = totalRhoTL.Pt();
+      
       ptSubRC = ptRC - ptRhoRC;
+      pt4VecSubRC = pt4VecRC - pt4VecRhoRC;
       
       rcTreeOut_p->Fill();
     }

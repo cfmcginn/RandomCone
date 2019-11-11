@@ -12,7 +12,7 @@ MKDIR_BIN=mkdir -p $(PWD)/bin
 MKDIR_OUTPUT=mkdir -p $(PWD)/output
 MKDIR_PDF=mkdir -p $(PWD)/pdfDir
 
-all: mkdirBin mkdirPdf mkdirOutput bin/quickCMSTableGen.exe bin/processForestForRC.exe bin/makeHistRC.exe bin/plotHistRC.exe
+all: mkdirBin mkdirPdf mkdirOutput bin/quickCMSTableGen.exe bin/processForestForRC.exe bin/processForestForImb.exe bin/makeHistRC.exe bin/plotHistRC.exe bin/makeHistImb.exe bin/plotHistImb.exe bin/smearPPToCent.exe
 
 mkdirBin:
 	$(MKDIR_BIN)
@@ -25,16 +25,29 @@ mkdirPdf:
 
 
 bin/processForestForRC.exe: src/processForestForRC.C
-	$(CXX) $(CXXFLAGS) src/processForestForRC.C $(ROOT) $(INCLUDE) -o bin/processForestForRC.exe
+	$(CXX) $(CXXFLAGS) src/processForestForRC.C $(ROOT) $(INCLUDE) -o bin/processForestForRC.exe 
+
+bin/processForestForImb.exe: src/processForestForImb.C
+	$(CXX) $(CXXFLAGS) src/processForestForImb.C $(ROOT) $(INCLUDE) -o bin/processForestForImb.exe 
 
 bin/makeHistRC.exe: src/makeHistRC.C
 	$(CXX) $(CXXFLAGS) src/makeHistRC.C $(ROOT) $(INCLUDE) -o bin/makeHistRC.exe
+
+bin/makeHistImb.exe: src/makeHistImb.C
+	$(CXX) $(CXXFLAGS) src/makeHistImb.C $(ROOT) $(INCLUDE) -o bin/makeHistImb.exe
 
 bin/plotHistRC.exe: src/plotHistRC.C
 	$(CXX) $(CXXFLAGS) src/plotHistRC.C $(ROOT) $(INCLUDE) -o bin/plotHistRC.exe
 
 bin/quickCMSTableGen.exe: src/quickCMSTableGen.C
 	$(CXX) $(CXXFLAGS) src/quickCMSTableGen.C $(ROOT) $(INCLUDE) -o bin/quickCMSTableGen.exe
+
+bin/plotHistImb.exe: src/plotHistImb.C
+	$(CXX) $(CXXFLAGS) src/plotHistImb.C $(ROOT) $(INCLUDE) -o bin/plotHistImb.exe
+
+bin/smearPPToCent.exe: src/smearPPToCent.C
+	$(CXX) $(CXXFLAGS) src/smearPPToCent.C $(ROOT) $(INCLUDE) -o bin/smearPPToCent.exe
+
 
 clean:
 	rm -f ./*~
