@@ -34,6 +34,7 @@ class paramPropagator{
   void setNRC(std::string inStr);
   void setRCInput(std::string inStr);
   void setImbInput(std::string inStr);
+  void setExtendImb(std::string inStr);
   void setRCR(std::string inStr);
   void setJetR(std::string inStr);
   void setPthats(std::string inStr);
@@ -41,9 +42,11 @@ class paramPropagator{
   void setDoNCollWeights(std::string inStr);
   void setPtCut(std::string inStr);
   void setIsMC(std::string inStr);
+  void setIsPP(std::string inStr);
   void setCentInput(std::string inStr);
   void setNRhoMC(std::string inStr);
   void setRhoInput(std::string inStr);
+  void setRhoFlowInput(std::string inStr);
 
   bool checkNCentBinsMax(int nCentBinsMax);
   bool checkNEtaBinsMax(int nEtaBinsMax);
@@ -63,9 +66,11 @@ class paramPropagator{
   std::string getDoNCollWeightsStr(){return paramFound["DONCOLLWEIGHTS"];}
   std::string getPtCutStr(){return paramFound["PTCUT"];}
   std::string getIsMCStr(){return paramFound["ISMC"];}
+  std::string getIsPPStr(){return paramFound["ISPP"];}
   std::string getCentInputStr(){return paramFound["CENTINPUT"];}
   std::string getNRhoMCStr(){return paramFound["NRHOMC"];}
   std::string getRhoInputStr(){return paramFound["RHOINPUT"];}
+  std::string getRhoFlowInputStr(){return paramFound["RHOFLOWINPUT"];}
   
   std::map<std::string, std::string> getParamFound(){return paramFound;}
   
@@ -93,6 +98,7 @@ class paramPropagator{
   Bool_t getDoNCollWeights(){return doNCollWeights;}
   Double_t getPtCut(){return ptCut;}
   Bool_t getIsMC(){return isMC;}
+  Bool_t getIsPP(){return isPP;}
 
   std::string getRCInStr(){return rcInStr;}
   bool getIsVectorRC(){return isVectorRC;}
@@ -122,6 +128,12 @@ class paramPropagator{
   std::string getImbConstEtaStr(){return imbConstEtaStr;}
   std::string getImbConstjtposStr(){return imbConstjtposStr;}
 
+  std::string getImbPfCHFStr(){return imbPfCHFStr;}
+  std::string getImbPfCEFStr(){return imbPfCEFStr;}
+  std::string getImbPfMUFStr(){return imbPfMUFStr;}
+  std::string getImbPfNEFStr(){return imbPfNEFStr;}
+  std::string getImbPfNHFStr(){return imbPfNHFStr;}
+  
   std::string getCentInStr(){return centInStr;}
   std::string getCentTableStr(){return centTableStr;}
   std::string getCentVarType(){return centVarType;}
@@ -137,10 +149,12 @@ class paramPropagator{
   std::string getRhoEtaMinStr(){return rhoEtaMinStr;}
   std::string getRhoEtaMaxStr(){return rhoEtaMaxStr;}
 
+  std::string getRhoFlowInStr(){return rhoFlowInStr;}
+
  private:
-  static const Int_t nParams = 17;
-  std::string params[nParams] = {"ETABINSLOW", "ETABINSHIGH", "CENTBINSLOW", "CENTBINSHIGH", "NRC", "RCINPUT", "RCR", "JETR", "PTHATS", "PTHATWEIGHTS", "DONCOLLWEIGHTS", "PTCUT", "ISMC", "CENTINPUT", "NRHOMC", "RHOINPUT", "IMBINPUT"};
-  std::string paramDefaults[nParams] = {"0,1", "1,2", "0,30", "30,100", "1", "", "0.4", "0.4", "1", "0.0", "0", "", "100", "", ""};
+  static const Int_t nParams = 20;
+  std::string params[nParams] = {"ETABINSLOW", "ETABINSHIGH", "CENTBINSLOW", "CENTBINSHIGH", "NRC", "RCINPUT", "RCR", "JETR", "PTHATS", "PTHATWEIGHTS", "DONCOLLWEIGHTS", "PTCUT", "ISMC", "ISPP", "CENTINPUT", "NRHOMC", "RHOINPUT", "RHOFLOWINPUT", "IMBINPUT", "EXTENDIMB"};
+  std::string paramDefaults[nParams] = {"0,1", "1,2", "0,30", "30,100", "1", "", "0.4", "0.4", "1", "0.0", "0", "1", "", "", "100", "", "", "", ""};
   std::map<std::string, std::string> paramFound;
       
   Int_t nEtaBins;
@@ -160,6 +174,7 @@ class paramPropagator{
   Bool_t doNCollWeights;
   Double_t ptCut;
   Bool_t isMC;
+  Bool_t isPP;
   
   std::string rcInStr;
   bool isVectorRC;
@@ -185,6 +200,12 @@ class paramPropagator{
   std::string imbConstEtaStr;
   std::string imbConstjtposStr;
 
+  std::string imbPfCHFStr;
+  std::string imbPfCEFStr;
+  std::string imbPfMUFStr;
+  std::string imbPfNEFStr;
+  std::string imbPfNHFStr;
+  
   std::string centInStr;
   std::string centTableStr;
   std::string centVarType;
@@ -199,7 +220,9 @@ class paramPropagator{
   std::string rhoStr;
   std::string rhoEtaMinStr;
   std::string rhoEtaMaxStr;
-  
+
+  std::string rhoFlowInStr;
+
   bool checkNBinsMax(std::string binStr, int nBins, int nBinsMax);
 };
 
@@ -220,6 +243,7 @@ paramPropagator::paramPropagator()
   doNCollWeights = false;
   ptCut = 0.0;
   isMC = false;
+  isPP = true;
   
   rcInStr = "";
   isVectorRC = false;
@@ -245,6 +269,12 @@ paramPropagator::paramPropagator()
   imbConstEtaStr = "";
   imbConstjtposStr = "";
 
+  imbPfCHFStr = "";
+  imbPfCEFStr = "";
+  imbPfMUFStr = "";
+  imbPfNEFStr = "";
+  imbPfNHFStr = "";
+  
   centInStr = "";
   centTableStr = "";
   centVarType = ""; 
@@ -259,6 +289,8 @@ paramPropagator::paramPropagator()
   rhoStr = "";
   rhoEtaMinStr = "";
   rhoEtaMaxStr = "";
+
+  rhoFlowInStr = "";
 
   return;
 }
@@ -332,10 +364,13 @@ void paramPropagator::setArbitraryParam(std::string inStr)
   else if(isStrSame(tempVect[0], "DONCOLLWEIGHTS")) setDoNCollWeights(inStr);
   else if(isStrSame(tempVect[0], "PTCUT")) setPtCut(inStr);
   else if(isStrSame(tempVect[0], "ISMC")) setIsMC(inStr);
+  else if(isStrSame(tempVect[0], "ISPP")) setIsPP(inStr);
   else if(isStrSame(tempVect[0], "CENTINPUT")) setCentInput(inStr);
   else if(isStrSame(tempVect[0], "NRHOMC")) setNRhoMC(inStr);
   else if(isStrSame(tempVect[0], "RHOINPUT")) setRhoInput(inStr);
+  else if(isStrSame(tempVect[0], "RHOFLOWINPUT")) setRhoFlowInput(inStr);
   else if(isStrSame(tempVect[0], "IMBINPUT")) setImbInput(inStr);
+  else if(isStrSame(tempVect[0], "EXTENDIMB")) setExtendImb(inStr);
   else{
     std::cout << "WARNING PARAMPROPAGATOR: Input param \'" << tempVect[0] << "\' is not valid. return" << std::endl;
     return;
@@ -446,7 +481,7 @@ void paramPropagator::setRCInput(std::string inStr)
 void paramPropagator::setImbInput(std::string inStr)
 {
   std::vector<std::string> tempVect = strToVect(inStr);
-  if(tempVect.size() != 16 && tempVect.size() != 0) std::cout << "WARNING PARAMPROPAGATOR: IMBINPUT IS INVALID SIZE. return 1";
+  if(tempVect.size() != 16) std::cout << "WARNING PARAMPROPAGATOR: IMBINPUT IS INVALID SIZE. return 1";
   else{
     imbInStr = tempVect[1];
     if(isStrSame("vector", tempVect[2])) isVectorImb = true;
@@ -467,6 +502,21 @@ void paramPropagator::setImbInput(std::string inStr)
     imbConstPhiStr = tempVect[13];
     imbConstEtaStr = tempVect[14];    
     imbConstjtposStr = tempVect[15];    
+  }
+
+  return;
+}
+
+void paramPropagator::setExtendImb(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() != 6) std::cout << "WARNING PARAMPROPAGATOR: EXTENDIMB IS INVALID SIZE. return 1";
+  else{
+    imbPfCHFStr = tempVect[1];
+    imbPfCEFStr = tempVect[2];
+    imbPfMUFStr = tempVect[3];
+    imbPfNEFStr = tempVect[4];
+    imbPfNHFStr = tempVect[5];
   }
 
   return;
@@ -539,6 +589,15 @@ void paramPropagator::setIsMC(std::string inStr)
   return;
 }
 
+void paramPropagator::setIsPP(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() == 1) std::cout << "WARNING PARAMPROPAGATOR: ISPP HAS NO VALUES, \'" << inStr << "\'. return 1" << std::endl;
+  else isPP = (bool)(std::stoi(tempVect[1]));
+  
+  return;
+}
+
 
 bool paramPropagator::checkNBinsMax(std::string binStr, int nBins, int nBinsMax)
 {
@@ -580,6 +639,7 @@ void paramPropagator::setNRhoMC(std::string inStr)
   return;
 }
 
+
 void paramPropagator::setRhoInput(std::string inStr)
 {
   std::vector<std::string> tempVect = strToVect(inStr);
@@ -598,6 +658,16 @@ void paramPropagator::setRhoInput(std::string inStr)
     rhoEtaMinStr = tempVect[6];
     if(tempVect.size() == 8) rhoEtaMaxStr = tempVect[7];
   }
+
+  return;
+}
+
+
+void paramPropagator::setRhoFlowInput(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() != 2) std::cout << "WARNING PARAMPROPAGATOR: RHOFLOWINPUT IS INVALID SIZE. return 1" << std::endl;
+  else rhoFlowInStr = tempVect[1];
   
   return;
 }
