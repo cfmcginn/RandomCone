@@ -27,7 +27,7 @@
 #include "include/returnRootFileContentsList.h"
 
 
-void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::map<std::string, TH1D*>* nameToHist, paramPropagator* params_p, std::string dateStr)
+void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::map<std::string, TH1D*>* nameToHist, paramPropagator* params_p, std::string dateStr, std::string moreCombo, std::string postCombo = "")
 {
   const Int_t nStyles = 4;
   const Int_t styles[nStyles] = {24, 25, 28, 46};
@@ -37,16 +37,28 @@ void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::
 
   const Double_t ptCut = params_p->getPtCut();
   const Double_t rcR = params_p->getRCR();
-  
+
+  /*
+  const Int_t nPtBins = 4;
+  const Double_t ptBinsLow[nPtBins] = {50., 100., 200., 300.};
+  const Double_t ptBinsHigh[nPtBins] = {100., 200., 300., 500.};
+
+  std::vector<std::string> ptBinsStr;
+  for(Int_t pI = 0; pI < nPtBins; ++pI){
+    ptBinsStr.push_back("Pt"+prettyString(ptBinsLow[pI],1,true)+"to"+prettyString(ptBinsHigh[pI],1,true));
+  }
+  */  
   kirchnerPalette kPal;
   const Int_t nColors = 5;
   const Int_t colors[nColors] = {0, 2, 3, 5, 6}; // this are positions in the kirchnerpalette class
   
   Double_t nSigmaLeft = 3.0;
-  Double_t nSigmaRight = 1.0;
+  Double_t nSigmaRight = 0.5;
   Double_t fracLeft = calcQuickGaus(nSigmaLeft);
   Double_t fracRight = calcQuickGaus(nSigmaRight);
 
+  
+  
   std::vector<std::string> centStr, etaStr;
   std::vector<double> centBinsLow = params_p->getCentBinsLow();
   std::vector<double> centBinsHigh = params_p->getCentBinsHigh();
@@ -64,10 +76,12 @@ void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::
     etaStr.push_back(temp);
   }
 
-
+  std::string histStr = "";
   
   std::string tagStr = "RCR" + prettyString(rcR, 1, true) + "_PtCut" + prettyString(ptCut, 2, true) + "_IsMC" + std::to_string(params_p->getIsMC());
-
+  
+  std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+    
   for(Int_t eI = 0; eI < nEtaBins; ++eI){
     TCanvas* canv_p = new TCanvas("temp", "", 450, 450);
     canv_p->SetTopMargin(0.01);
@@ -78,12 +92,41 @@ void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::
     //pre-processing step
     Double_t max = -1;
     Double_t min = 100000000000;
-    
+
+    std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+
     for(Int_t cI = 0; cI < nCentBins; ++cI){
-      std::string comboStr = centStr[cI] + "_" + etaStr[eI];
-      std::string histName = comboNameToTH1NameMap->at(comboStr);
-      TH1D* tempHist_p = nameToHist->at(histName);
+    std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+      std::string comboStr = moreCombo + centStr[cI] + "_" + etaStr[eI];
+      if(postCombo.size() != 0) comboStr = comboStr + "_" + postCombo;
       
+      std::cout << "COUNT: " << comboNameToTH1NameMap->count(comboStr) << std::endl;
+      std::cout << "COMB: " << comboStr << std::endl;
+
+      for(auto const & iter : (*comboNameToTH1NameMap)){
+	std::cout << " " << iter.first << std::endl;
+      }
+
+      std::cout << "MORE, cent, eta post: " << moreCombo << ", " << centStr[cI] << ", " << etaStr[eI] << ", " << postCombo << std::endl;
+      std::cout << " COMB2: " << comboStr << std::endl;
+      std::string histName = comboNameToTH1NameMap->at(comboStr);
+      std::cout << comboStr << ", " << histName << std::endl;
+      std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+
+      std::cout << "NAMETOHIST: " << std::endl;
+      for(auto const & iter : (*nameToHist)){
+	std::cout << " " << iter.first << std::endl;
+      }
+      
+      std::cout << nameToHist->count(histName) << std::endl;
+      TH1D* tempHist_p = nameToHist->at(histName);
+
+          std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+
+      histStr = histName;
+
+      std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+
       Double_t scaleFactor = tempHist_p->Integral();
       
       for(Int_t bIX = 0; bIX < tempHist_p->GetXaxis()->GetNbins(); ++bIX){
@@ -94,21 +137,28 @@ void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::
 	tempHist_p->SetBinContent(bIX+1, binVal);
 	tempHist_p->SetBinError(bIX+1, binErr);
       }
-      
+
+          std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+
       max = TMath::Max(max, getMax(tempHist_p));
       min = TMath::Min(min, getMinGTZero(tempHist_p));
     }
-    
+
+        std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+
     TLegend* leg_p = new TLegend(0.19, 0.99 - .035*nCentBins, 0.4, 0.99);
     leg_p->SetFillColor(0);
     leg_p->SetFillStyle(0);
     leg_p->SetBorderSize(0);
     leg_p->SetTextFont(43);
     leg_p->SetTextSize(13);    
-    
+
+      std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+
     std::cout << "MAX MIN: " << max << " " << min << std::endl;
     for(Int_t cI = 0; cI < nCentBins; ++cI){
-      std::string comboStr = centStr[cI] + "_" + etaStr[eI];
+      std::string comboStr = moreCombo + centStr[cI] + "_" + etaStr[eI];
+      if(postCombo.size() != 0) comboStr = comboStr + "_" + postCombo;
       std::string histName = comboNameToTH1NameMap->at(comboStr);
       TH1D* tempHist_p = nameToHist->at(histName);
       
@@ -149,6 +199,7 @@ void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::
 	  maxBinPos= bIX;
 	}
       }
+  std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
       
       Double_t totalLeft = tempHist_p->Integral(1, maxBinPos);
       Double_t totalRight = tempHist_p->Integral(maxBinPos, tempHist_p->GetXaxis()->GetNbins());
@@ -210,6 +261,8 @@ void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::
     while(etaLabel.find("p") != std::string::npos){etaLabel.replace(etaLabel.find("p"), 1, ".");}
     if(etaLabel.find("0.0<") != std::string::npos) etaLabel.replace(etaLabel.find("0.0<"), 4, "");
 
+      std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+
     TLatex* label_p = new TLatex();  
     label_p->SetTextFont(43);
     label_p->SetTextSize(14);
@@ -229,8 +282,13 @@ void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::
 
     gPad->SetLogy();
     gStyle->SetOptStat(0);
-    
-    std::string saveName = "pdfDir/" + dateStr + "/rCMinRho_" + etaStr[eI] + "_" + tagStr + "_" + dateStr + ".pdf";
+
+
+    std::string finalTag = moreCombo;
+    if(postCombo.size() != 0) finalTag = finalTag + postCombo + "_";    
+	
+      
+    std::string saveName = "pdfDir/" + dateStr + "/" + finalTag + etaStr[eI] + "_" + tagStr + "_" + dateStr + ".pdf";
     quietSaveAs(canv_p, saveName);
     delete canv_p;
 
@@ -249,6 +307,15 @@ int plotHistRC(const std::string inFileName)
     return 1;
   }
   
+  const Int_t nPtBins = 3;
+  const Double_t ptBinsLow[nPtBins] = {50., 100., 200.};
+  const Double_t ptBinsHigh[nPtBins] = {100., 200., 500.};
+
+  std::vector<std::string> ptBinsStr;
+  for(Int_t pI = 0; pI < nPtBins; ++pI){
+    ptBinsStr.push_back("Pt"+prettyString(ptBinsLow[pI],1,true)+"to"+prettyString(ptBinsHigh[pI],1,true));
+  }
+
   TDatime* date = new TDatime();
   const std::string dateStr = std::to_string(date->GetDate());
   delete date;  
@@ -293,19 +360,59 @@ int plotHistRC(const std::string inFileName)
     nameCounterTH2[eta] = 0;    
   }
   
-  std::vector<std::string> listTH1D = returnRootFileContentsList(inFile_p, "TH1D", "histRCMin");
+  std::vector<std::string> listTH1D = returnRootFileContentsList(inFile_p, "TH1D", "hist");
   std::vector<std::string> listTH2D = returnRootFileContentsList(inFile_p, "TH2D", "histRCMin");
 
   for(auto const & th1 : listTH1D){
     bool isFound = false;
     for(auto const & iter : nameCounterTH1){
+
+      std::string preNom = "histRCMinRhoFlow_";
+      std::string ptStr = "";
+
+      if(th1.find("histRCMinRho_") != std::string::npos) preNom = "histRCMinRho_";
+      else if(th1.find("histRCMinRhoFlow_") != std::string::npos) preNom = "histRCMinRhoFlow_";
+      else if(th1.find("histRho_") != std::string::npos) preNom = "histRho_";
+      else if(th1.find("histRhoFlow_") != std::string::npos) preNom = "histRhoFlow_";
+      else if(th1.find("histJetRho_") != std::string::npos){
+	preNom = "histJetRho_";
+	for(unsigned int pI = 0; pI < ptBinsStr.size(); ++pI){
+	  if(th1.find(ptBinsStr[pI]) != std::string::npos) ptStr = ptBinsStr[pI];	  
+	}	
+      }      
+      else if(th1.find("histJetRhoFlow_") != std::string::npos){
+	preNom = "histJetRhoFlow_";
+	for(unsigned int pI = 0; pI < ptBinsStr.size(); ++pI){
+	  if(th1.find(ptBinsStr[pI]) != std::string::npos) ptStr = ptBinsStr[pI];	  
+	}	
+      }
+      else if(th1.find("histRefRho_") != std::string::npos){
+	preNom = "histRefRho_";
+	for(unsigned int pI = 0; pI < ptBinsStr.size(); ++pI){
+	  if(th1.find(ptBinsStr[pI]) != std::string::npos) ptStr = ptBinsStr[pI];	  
+	}	
+      }      
+      else if(th1.find("histRefRhoFlow_") != std::string::npos){
+	preNom = "histRefRhoFlow_";
+	for(unsigned int pI = 0; pI < ptBinsStr.size(); ++pI){
+	  if(th1.find(ptBinsStr[pI]) != std::string::npos) ptStr = ptBinsStr[pI];	  
+	}	
+      }
+      else continue;
+      
+      std::cout << "PREBUILDIN " << th1 << std::endl;
+      std::cout << "NAME: " << iter.first << std::endl;
       std::string name = iter.first;
       std::string eta = name.substr(name.find("_")+1, name.size());
       std::string cent = name.substr(0, name.find("_"));
 
-      std::cout << " Search " << eta << ", " << cent << std::endl;
+      name = preNom + name;
+      if(ptStr.size() != 0) name = name + "_" + ptStr;
+      
       if(th1.find(eta) != std::string::npos){
 	if(th1.find(cent) != std::string::npos){
+
+	  std::cout << "BUILDING NAME: " << name << std::endl;
 	  nameCounterTH1[name]++;
 	  comboNameToTH1NameMap[name] = th1;
 	  isFound = true;
@@ -321,7 +428,7 @@ int plotHistRC(const std::string inFileName)
     if(iter.second != 1) std::cout << "WARNING: " << iter.first << " has counts != 1" << std::endl;
   }
 
-  std::map<std::string, TH1D*> nameToHistRCMinMapTH1, nameToHistRCMapTH1;
+  std::map<std::string, TH1D*> nameToHistRCMinMapTH1, nameToHistRCFlowMinMapTH1, nameToHistRhoMapTH1, nameToHistRhoFlowMapTH1, nameToHistJetRhoMapTH1, nameToHistJetRhoFlowMapTH1, nameToHistRefRhoMapTH1, nameToHistRefRhoFlowMapTH1, nameToHistRCMapTH1;
 
   TIter next(inFile_p->GetListOfKeys());
   TKey* key = NULL;
@@ -329,8 +436,29 @@ int plotHistRC(const std::string inFileName)
     const std::string name = key->GetName();
     const std::string className = key->GetClassName();
 
-    if(name.find("histRCMin") != std::string::npos){    
+    if(name.find("histRCMinRho_") != std::string::npos){    
       if(className.find("TH1D") != std::string::npos) nameToHistRCMinMapTH1[name] = (TH1D*)key->ReadObj();
+    }
+    else if(name.find("histRCMinRhoFlow_") != std::string::npos){    
+      if(className.find("TH1D") != std::string::npos) nameToHistRCFlowMinMapTH1[name] = (TH1D*)key->ReadObj();
+    }
+    else if(name.find("histRho_") != std::string::npos){    
+      if(className.find("TH1D") != std::string::npos) nameToHistRhoMapTH1[name] = (TH1D*)key->ReadObj();
+    }
+    else if(name.find("histRhoFlow_") != std::string::npos){    
+      if(className.find("TH1D") != std::string::npos) nameToHistRhoFlowMapTH1[name] = (TH1D*)key->ReadObj();
+    }
+    else if(name.find("histJetRho_") != std::string::npos){    
+      if(className.find("TH1D") != std::string::npos) nameToHistJetRhoMapTH1[name] = (TH1D*)key->ReadObj();
+    }
+    else if(name.find("histJetRhoFlow_") != std::string::npos){    
+      if(className.find("TH1D") != std::string::npos) nameToHistJetRhoFlowMapTH1[name] = (TH1D*)key->ReadObj();
+    }
+    else if(name.find("histRefRho_") != std::string::npos){    
+      if(className.find("TH1D") != std::string::npos) nameToHistRefRhoMapTH1[name] = (TH1D*)key->ReadObj();
+    }
+    else if(name.find("histRefRhoFlow_") != std::string::npos){    
+      if(className.find("TH1D") != std::string::npos) nameToHistRefRhoFlowMapTH1[name] = (TH1D*)key->ReadObj();
     }
     else if(name.find("histRC_") != std::string::npos){    
       if(className.find("TH1D") != std::string::npos) nameToHistRCMapTH1[name] = (TH1D*)key->ReadObj();
@@ -340,12 +468,28 @@ int plotHistRC(const std::string inFileName)
   //Start plotting
   checkMakeDir("pdfDir");
   checkMakeDir("pdfDir/" + dateStr);
+  
+  if(ptCut < 0.001){
+    runPlotter(&comboNameToTH1NameMap, &nameToHistRCMinMapTH1, &params, dateStr, "histRCMinRho_");
+    
+    runPlotter(&comboNameToTH1NameMap, &nameToHistRCFlowMinMapTH1, &params, dateStr, "histRCMinRhoFlow_");
 
-  if(ptCut < 0.001) runPlotter(&comboNameToTH1NameMap, &nameToHistRCMinMapTH1, &params, dateStr);
+    runPlotter(&comboNameToTH1NameMap, &nameToHistRhoMapTH1, &params, dateStr, "histRho_");
+    
+    runPlotter(&comboNameToTH1NameMap, &nameToHistRhoFlowMapTH1, &params, dateStr, "histRhoFlow_");
+
+    
+    for(unsigned int pI = 0; pI < ptBinsStr.size(); ++pI){	
+      runPlotter(&comboNameToTH1NameMap, &nameToHistJetRhoMapTH1, &params, dateStr, "histJetRho_", ptBinsStr[pI]);    
+      runPlotter(&comboNameToTH1NameMap, &nameToHistJetRhoFlowMapTH1, &params, dateStr, "histJetRhoFlow_", ptBinsStr[pI]);
+      runPlotter(&comboNameToTH1NameMap, &nameToHistRefRhoMapTH1, &params, dateStr, "histRefRho_", ptBinsStr[pI]);    
+      runPlotter(&comboNameToTH1NameMap, &nameToHistRefRhoFlowMapTH1, &params, dateStr, "histRefRhoFlow_", ptBinsStr[pI]);
+    }
+  }
 
   inFile_p->Close();
   delete inFile_p;
-  
+
   return 0;
 }
 
