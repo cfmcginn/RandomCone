@@ -122,6 +122,13 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
   if(rhoEtaMaxStr.size() != 0) rhoVarStr.push_back(rhoEtaMaxStr);
   if(doRhoFlow) rhoVarStr.push_back(rhoFlowInStr);
 
+  const bool doEvt = paramFound["EVTINPUT"].size() != 0;
+  std::string evtInStr = params.getEvtInStr();
+  bool isVectorEvt = params.getIsVectorEvt();
+  std::string evtNVarStr = params.getEvtNVarStr();
+  std::string evtVarStr = params.getEvtVarStr();
+  const int evtPos = params.getEvtPos();
+  
   //Imb in tree
   const bool doJet = paramFound["IMBINPUT"].size() != 0;  
   std::string imbInStr = params.getImbInStr();
@@ -204,6 +211,12 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
   Double_t refptD_[nMaxJet];
   Double_t jtweightD_[nMaxJet];
 
+
+  //Evt vars
+  const Int_t nMaxEvt_ = 100;
+  Int_t nEvt_;
+  Float_t evtPhi_[nMaxEvt_];  
+  
   
   //PROCESS INPUT PARAMS FILE
   params.getNEtaBins();
@@ -250,7 +263,7 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
 
   UInt_t outEntry, etaPos, etaPosJet, etaPosRef;
   Int_t cent, centPos;
-  Float_t weight, etaRC, phiRC, ptRC, ptRhoRC, ptRhoFlowRC, ptSubRC, ptSubFlowRC, pt4VecRC, pt4VecRhoRC, pt4VecRhoFlowRC, pt4VecSubRC, pt4VecSubFlowRC, ptJet, etaJet, phiJet, ptRhoJet, ptRhoFlowJet, pt4VecRhoJet, pt4VecRhoFlowJet, ptRef, etaRef, phiRef, ptRhoRef, ptRhoFlowRef, pt4VecRhoRef, pt4VecRhoFlowRef;
+  Float_t weight, etaRC, phiRC, evtPhiRC, ptRC, ptRhoRC, ptRhoFlowRC, ptSubRC, ptSubFlowRC, pt4VecRC, pt4VecRhoRC, pt4VecRhoFlowRC, pt4VecSubRC, pt4VecSubFlowRC, ptJet, etaJet, phiJet, evtPhiJet, ptRhoJet, ptRhoFlowJet, pt4VecRhoJet, pt4VecRhoFlowJet, ptRef, etaRef, phiRef, evtPhiRef, ptRhoRef, ptRhoFlowRef, pt4VecRhoRef, pt4VecRhoFlowRef;
   
   rcTreeOut_p->Branch("outEntry", &outEntry, "outEntry/i");
   rcTreeOut_p->Branch("weight", &weight, "weight/F");
@@ -259,6 +272,7 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
   rcTreeOut_p->Branch("cent", &cent, "cent/I");
   rcTreeOut_p->Branch("etaRC", &etaRC, "etaRC/F");
   rcTreeOut_p->Branch("phiRC", &phiRC, "phiRC/F");
+  if(doEvt) rcTreeOut_p->Branch("evtPhiRC", &evtPhiRC, "evtPhiRC/F");
   rcTreeOut_p->Branch("ptRC", &ptRC, "ptRC/F");
   rcTreeOut_p->Branch("ptRhoRC", &ptRhoRC, "ptRhoRC/F");
   if(doRhoFlow) rcTreeOut_p->Branch("ptRhoFlowRC", &ptRhoFlowRC, "ptRhoFlowRC/F");
@@ -279,6 +293,7 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
     jetTreeOut_p->Branch("ptJet", &ptJet, "ptJet/F");
     jetTreeOut_p->Branch("etaJet", &etaJet, "etaJet/F");
     jetTreeOut_p->Branch("phiJet", &phiJet, "phiJet/F");
+    if(doEvt) jetTreeOut_p->Branch("evtPhiJet", &evtPhiJet, "evtPhiJet/F");
     jetTreeOut_p->Branch("ptRhoJet", &ptRhoJet, "ptRhoJet/F");
     if(doRhoFlow) jetTreeOut_p->Branch("ptRhoFlowJet", &ptRhoFlowJet, "ptRhoFlowJet/F");
     
@@ -294,6 +309,7 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
       genJetTreeOut_p->Branch("ptRef", &ptRef, "ptRef/F");
       genJetTreeOut_p->Branch("etaRef", &etaRef, "etaRef/F");
       genJetTreeOut_p->Branch("phiRef", &phiRef, "phiRef/F");
+      if(doEvt) jetTreeOut_p->Branch("evtPhiRef", &evtPhiRef, "evtPhiRef/F");
       genJetTreeOut_p->Branch("ptRhoRef", &ptRhoRef, "ptRhoRef/F");
       if(doRhoFlow) genJetTreeOut_p->Branch("ptRhoFlowRef", &ptRhoFlowRef, "ptRhoFlowRef/F");
       
@@ -315,18 +331,33 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
     if(imbWeightStr.size() != 0) imbBranchNames.push_back(imbWeightStr);
   }
 
+  std::vector<std::string> evtBranchNames;
+  if(doEvt){
+    evtBranchNames.push_back(evtNVarStr);
+    evtBranchNames.push_back(evtVarStr);
+  }
+  
   //Open file and check that our inputs are correct  
   TFile* inFile_p = new TFile(inFileName.c_str(), "READ");
+  std::string hbheTree = "skimanalysis/HltTree";
   std::vector<std::string> ttrees = returnRootFileContentsList(inFile_p, "TTree");
   bool rcIsFound = false;
   bool centIsFound = false;
   bool imbIsFound = false;
+  bool evtIsFound = false;
+  bool hbheIsFound = false;
+    
   for(auto const & iter : ttrees){
     if(isStrSame(rcInStr, iter)) rcIsFound = true;
     if(isStrSame(centInStr, iter)) centIsFound = true;
     if(doJet){
       if(isStrSame(imbInStr, iter)) imbIsFound = true;
     }
+    if(doEvt){
+      if(isStrSame(evtInStr, iter)) evtIsFound = true;
+    }
+    if(isStrSame(hbheTree, iter)) hbheIsFound = true;
+
     
     if(rcIsFound && centIsFound && (imbIsFound || !doJet)) break;
   }
@@ -343,9 +374,25 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
     std::cout << "INPUT TREE FOR IMB \'" << imbInStr << "\' is not found. return 1" << std::endl;
     return 1;
   }
+  if(!evtIsFound && doEvt){
+    std::cout << "INPUT TREE FOR EVT \'" << evtInStr << "\' is not found. return 1" << std::endl;
+    return 1;
+  }
 
   centralityFromInput centTable(centTableStr);
+  TTree* hbheTree_p = NULL;
+  Int_t HBHENoiseFilterResultRun2Loose = -1;
+  if(hbheIsFound){
+    hbheTree_p = (TTree*)inFile_p->Get(hbheTree.c_str());
+    hbheTree_p->SetBranchStatus("*", 0);
+    hbheTree_p->SetBranchStatus("HBHENoiseFilterResultRun2Loose", 1);
 
+    hbheTree_p->SetBranchAddress("HBHENoiseFilterResultRun2Loose", &HBHENoiseFilterResultRun2Loose);
+  }
+
+  TTree* evtTreeIn_p = NULL;
+  TObjArray* evtListOfBranchesArr = NULL;
+  std::map<std::string, bool> evtListOfBranchesMap;
   TTree* imbTreeIn_p = NULL;
   TObjArray* imbListOfBranchesArr = NULL;
   std::map<std::string, bool> imbListOfBranchesMap;
@@ -364,6 +411,13 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
     }
   }
 
+  if(doEvt){
+    evtTreeIn_p = (TTree*)inFile_p->Get(evtInStr.c_str());
+    evtListOfBranchesArr = evtTreeIn_p->GetListOfBranches();
+    for(Int_t bI = 0; bI < evtListOfBranchesArr->GetEntries(); ++bI){
+      evtListOfBranchesMap[evtListOfBranchesArr->At(bI)->GetName()] = true;
+    }
+  }
   
   rcTreeIn_p->SetBranchStatus("*", 0);
   for(auto const & iter : rcBranchNames){
@@ -384,6 +438,19 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
 	return 1;
       }
       imbTreeIn_p->SetBranchStatus(iter.c_str(), 1);
+    }
+  }
+  
+  if(doEvt){
+    evtTreeIn_p->SetBranchStatus("*", 0);
+    for(auto const & iter : evtBranchNames){
+      if(iter.size() == 0) continue;
+      
+      if(evtListOfBranchesMap.count(iter) == 0){
+	std::cout << "Requested branch \'" << iter << "\' not found in ttree \'" << evtInStr << "\'. please check. return 1" << std::endl;
+	return 1;
+      }
+      evtTreeIn_p->SetBranchStatus(iter.c_str(), 1);
     }
   }
   
@@ -512,6 +579,15 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
       }
     }
   }  
+
+  if(doEvt){
+    if(!isVectorEvt){
+      evtTreeIn_p->SetBranchAddress(evtNVarStr.c_str(), &nEvt_);
+      evtTreeIn_p->SetBranchAddress(evtVarStr.c_str(), evtPhi_);
+    }
+    
+  }  
+
   
   if(doRhoFlow) rhoTreeIn_p->SetBranchAddress(rhoFlowInStr.c_str(), &rhoFlowFitParams_p);
   
@@ -549,6 +625,11 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
     std::cout << "Pre-Processing " << nEntries << "..." << std::endl;
     for(Int_t entry = 0; entry < nEntries; ++entry){
       if(entry%nDiv == 0) std::cout << " Entry " << entry << "/" << nEntries << std::endl;
+      if(hbheTree_p != NULL){
+        hbheTree_p->GetEntry(entry);
+        if(!HBHENoiseFilterResultRun2Loose) continue;
+      }
+      
       centTreeIn_p->GetEntry(entry);
       int centVal = 0;
       
@@ -575,6 +656,13 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
   std::cout << "Processing " << nEntries << "..." << std::endl;
   for(Int_t entry = 0; entry < nEntries; ++entry){
     if(entry%nDiv == 0) std::cout << " Entry " << entry << "/" << nEntries << std::endl;
+
+    if(hbheTree_p != NULL){
+      hbheTree_p->GetEntry(entry);
+      if(!HBHENoiseFilterResultRun2Loose) continue;
+    }
+    
+    if(doEvt) evtTreeIn_p->GetEntry(entry);
     rcTreeIn_p->GetEntry(entry);
     centTreeIn_p->GetEntry(entry);
     rhoTreeIn_p->GetEntry(entry);
@@ -582,6 +670,14 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
     
     outEntry = entry;
 
+    if(doEvt){
+      if(nEvt_ < evtPos) continue;
+
+      evtPhiRC = evtPhi_[evtPos];
+      evtPhiJet = evtPhi_[evtPos];
+      evtPhiRef = evtPhi_[evtPos];
+    }
+    
     //Lets reassign values to float array for later simplicity
     if(isVectorRC){
       nPart_ = 0;

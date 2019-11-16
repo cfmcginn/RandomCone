@@ -34,6 +34,7 @@ class paramPropagator{
   void setNRC(std::string inStr);
   void setRCInput(std::string inStr);
   void setImbInput(std::string inStr);
+  void setEvtInput(std::string inStr);
   void setExtendImb(std::string inStr);
   void setRCR(std::string inStr);
   void setJetR(std::string inStr);
@@ -104,6 +105,13 @@ class paramPropagator{
   bool getIsVectorRC(){return isVectorRC;}
   bool getIsDoubleRC(){return isDoubleRC;}
 
+  std::string getEvtInStr(){return evtInStr;}
+  bool getIsVectorEvt(){return isVectorEvt;}
+  std::string getEvtNVarStr(){return evtNVarStr;}
+  std::string getEvtVarStr(){return evtVarStr;}
+  std::string getEvtPosStr(){return evtPosStr;}
+  int getEvtPos(){return evtPos;}
+
   std::string getImbInStr(){return imbInStr;}
   bool getIsVectorImb(){return isVectorImb;}
   bool getIsDoubleImb(){return isDoubleImb;}
@@ -152,9 +160,9 @@ class paramPropagator{
   std::string getRhoFlowInStr(){return rhoFlowInStr;}
 
  private:
-  static const Int_t nParams = 20;
-  std::string params[nParams] = {"ETABINSLOW", "ETABINSHIGH", "CENTBINSLOW", "CENTBINSHIGH", "NRC", "RCINPUT", "RCR", "JETR", "PTHATS", "PTHATWEIGHTS", "DONCOLLWEIGHTS", "PTCUT", "ISMC", "ISPP", "CENTINPUT", "NRHOMC", "RHOINPUT", "RHOFLOWINPUT", "IMBINPUT", "EXTENDIMB"};
-  std::string paramDefaults[nParams] = {"0,1", "1,2", "0,30", "30,100", "1", "", "0.4", "0.4", "1", "0.0", "0", "1", "", "", "100", "", "", "", ""};
+  static const Int_t nParams = 21;
+  std::string params[nParams] = {"ETABINSLOW", "ETABINSHIGH", "CENTBINSLOW", "CENTBINSHIGH", "NRC", "RCINPUT", "RCR", "JETR", "PTHATS", "PTHATWEIGHTS", "DONCOLLWEIGHTS", "PTCUT", "ISMC", "ISPP", "CENTINPUT", "NRHOMC", "RHOINPUT", "RHOFLOWINPUT", "EVTINPUT", "IMBINPUT", "EXTENDIMB"};
+  std::string paramDefaults[nParams] = {"0,1", "1,2", "0,30", "30,100", "1", "", "0.4", "0.4", "1", "0.0", "0", "1", "", "", "100", "", "", "", "", ""};
   std::map<std::string, std::string> paramFound;
       
   Int_t nEtaBins;
@@ -184,6 +192,13 @@ class paramPropagator{
   std::string rcPhiStr;
   std::string rcEtaStr;
 
+  std::string evtInStr;
+  bool isVectorEvt;
+  std::string evtNVarStr;
+  std::string evtVarStr;
+  std::string evtPosStr;
+  int evtPos;
+  
   std::string imbInStr;
   bool isVectorImb;
   bool isDoubleImb;
@@ -253,6 +268,13 @@ paramPropagator::paramPropagator()
   rcPhiStr = "";
   rcEtaStr = "";
 
+  evtInStr = "";
+  isVectorEvt = false;
+  evtNVarStr = "";
+  evtVarStr = "";
+  evtPosStr = "";
+  evtPos = -1;
+    
   imbInStr = "";
   isVectorImb = false;
   isDoubleImb = false;
@@ -369,6 +391,7 @@ void paramPropagator::setArbitraryParam(std::string inStr)
   else if(isStrSame(tempVect[0], "NRHOMC")) setNRhoMC(inStr);
   else if(isStrSame(tempVect[0], "RHOINPUT")) setRhoInput(inStr);
   else if(isStrSame(tempVect[0], "RHOFLOWINPUT")) setRhoFlowInput(inStr);
+  else if(isStrSame(tempVect[0], "EVTINPUT")) setEvtInput(inStr);
   else if(isStrSame(tempVect[0], "IMBINPUT")) setImbInput(inStr);
   else if(isStrSame(tempVect[0], "EXTENDIMB")) setExtendImb(inStr);
   else{
@@ -475,6 +498,24 @@ void paramPropagator::setRCInput(std::string inStr)
     rcEtaStr = tempVect[restPos+3];    
   }
 	
+  return;
+}
+
+void paramPropagator::setEvtInput(std::string inStr)
+{
+  std::vector<std::string> tempVect = strToVect(inStr);
+  if(tempVect.size() != 3) std::cout << "WARNING PARAMPROPAGATOR: EVTINPUT IS INVALID SIZE. return 1";
+  else{
+    evtInStr = tempVect[1];
+    if(isStrSame(tempVect[2], "vector")) isVectorEvt = true;
+    else isVectorEvt = false;
+
+    evtNVarStr = tempVect[3];
+    evtVarStr = tempVect[4];
+    evtPosStr = tempVect[5];
+    evtPos = std::stoi(evtPosStr);
+  }
+
   return;
 }
 
