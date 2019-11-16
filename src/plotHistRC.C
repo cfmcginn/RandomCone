@@ -26,7 +26,6 @@
 #include "include/quickGaus.h"
 #include "include/returnRootFileContentsList.h"
 
-
 void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::map<std::string, TH1D*>* nameToHist, paramPropagator* params_p, std::string dateStr, std::string moreCombo, std::string postCombo = "")
 {
   const Int_t nStyles = 4;
@@ -37,6 +36,8 @@ void runPlotter(std::map<std::string, std::string>* comboNameToTH1NameMap, std::
 
   const Double_t ptCut = params_p->getPtCut();
   const Double_t rcR = params_p->getRCR();
+
+  
 
   /*
   const Int_t nPtBins = 4;
@@ -324,6 +325,17 @@ int plotHistRC(const std::string inFileName)
   paramPropagator params;
   params.setupFromROOT(inFile_p);
 
+  std::map<std::string, std::string> paramFound = params.getParamFound();
+  const bool doEvt = paramFound["EVTINPUT"].size() != 0;
+  const bool doJet = paramFound["IMBINPUT"].size() != 0;
+  const bool doRef = params.getImbRefPtStr().size() != 0;
+
+  std::vector<std::string> epStr = {"FullPlane"};
+  if(doEvt){
+    epStr.push_back("InPlane");
+    epStr.push_back("OutPlane");
+  }
+
   const Double_t ptCut = params.getPtCut();
 
   const Int_t nCentBins = params.getNCentBins();
@@ -377,7 +389,7 @@ int plotHistRC(const std::string inFileName)
       else if(th1.find("histJetRho_") != std::string::npos){
 	preNom = "histJetRho_";
 	for(unsigned int pI = 0; pI < ptBinsStr.size(); ++pI){
-	  if(th1.find(ptBinsStr[pI]) != std::string::npos) ptStr = ptBinsStr[pI];	  
+	  if(th1.find(ptBinsStr[pI]) != std::string::npos) ptStr = ptBinsStr[pI];	 
 	}	
       }      
       else if(th1.find("histJetRhoFlow_") != std::string::npos){
@@ -395,17 +407,26 @@ int plotHistRC(const std::string inFileName)
       else if(th1.find("histRefRhoFlow_") != std::string::npos){
 	preNom = "histRefRhoFlow_";
 	for(unsigned int pI = 0; pI < ptBinsStr.size(); ++pI){
-	  if(th1.find(ptBinsStr[pI]) != std::string::npos) ptStr = ptBinsStr[pI];	  
+	  if(th1.find(ptBinsStr[pI]) != std::string::npos) ptStr = ptBinsStr[pI];	 
 	}	
       }
       else continue;
       
+      std::string evtStr = "";
+      for(unsigned int epI = 0; epI < epStr.size(); ++epI){
+	if(th1.find(epStr[epI]) != std::string::npos){
+	  evtStr = epStr[epI];
+	  break;
+	}
+      }
+
       std::cout << "PREBUILDIN " << th1 << std::endl;
       std::cout << "NAME: " << iter.first << std::endl;
       std::string name = iter.first;
       std::string eta = name.substr(name.find("_")+1, name.size());
       std::string cent = name.substr(0, name.find("_"));
 
+      name = name + "_" + evtStr;
       name = preNom + name;
       if(ptStr.size() != 0) name = name + "_" + ptStr;
       
@@ -470,20 +491,28 @@ int plotHistRC(const std::string inFileName)
   checkMakeDir("pdfDir/" + dateStr);
   
   if(ptCut < 0.001){
-    runPlotter(&comboNameToTH1NameMap, &nameToHistRCMinMapTH1, &params, dateStr, "histRCMinRho_");
-    
-    runPlotter(&comboNameToTH1NameMap, &nameToHistRCFlowMinMapTH1, &params, dateStr, "histRCMinRhoFlow_");
 
-    runPlotter(&comboNameToTH1NameMap, &nameToHistRhoMapTH1, &params, dateStr, "histRho_");
-    
-    runPlotter(&comboNameToTH1NameMap, &nameToHistRhoFlowMapTH1, &params, dateStr, "histRhoFlow_");
+    for(unsigned int epI = 0; epI < epStr.size(); ++epI){
+      runPlotter(&comboNameToTH1NameMap, &nameToHistRCMinMapTH1, &params, dateStr, "histRCMinRho_", epStr[epI]);
+      
+      runPlotter(&comboNameToTH1NameMap, &nameToHistRCFlowMinMapTH1, &params, dateStr, "histRCMinRhoFlow_", epStr[epI]);
 
-    
-    for(unsigned int pI = 0; pI < ptBinsStr.size(); ++pI){	
-      runPlotter(&comboNameToTH1NameMap, &nameToHistJetRhoMapTH1, &params, dateStr, "histJetRho_", ptBinsStr[pI]);    
-      runPlotter(&comboNameToTH1NameMap, &nameToHistJetRhoFlowMapTH1, &params, dateStr, "histJetRhoFlow_", ptBinsStr[pI]);
-      runPlotter(&comboNameToTH1NameMap, &nameToHistRefRhoMapTH1, &params, dateStr, "histRefRho_", ptBinsStr[pI]);    
-      runPlotter(&comboNameToTH1NameMap, &nameToHistRefRhoFlowMapTH1, &params, dateStr, "histRefRhoFlow_", ptBinsStr[pI]);
+      runPlotter(&comboNameToTH1NameMap, &nameToHistRhoMapTH1, &params, dateStr, "histRho_", epStr[epI]);
+      
+      runPlotter(&comboNameToTH1NameMap, &nameToHistRhoFlowMapTH1, &params, dateStr, "histRhoFlow_", epStr[epI]);
+      
+      
+      if(doJet){
+	for(unsigned int pI = 0; pI < ptBinsStr.size(); ++pI){	
+	  runPlotter(&comboNameToTH1NameMap, &nameToHistJetRhoMapTH1, &params, dateStr, "histJetRho_", epStr[epI] + "_" + ptBinsStr[pI]);    
+	  runPlotter(&comboNameToTH1NameMap, &nameToHistJetRhoFlowMapTH1, &params, dateStr, "histJetRhoFlow_", epStr[epI] + "_" + ptBinsStr[pI]);
+	  
+	  if(doRef){
+	    runPlotter(&comboNameToTH1NameMap, &nameToHistRefRhoMapTH1, &params, dateStr, "histRefRho_", epStr[epI] + "_" + ptBinsStr[pI]);    
+	    runPlotter(&comboNameToTH1NameMap, &nameToHistRefRhoFlowMapTH1, &params, dateStr, "histRefRhoFlow_", epStr[epI] + "_" + ptBinsStr[pI]);
+	  }
+	}
+      }
     }
   }
 

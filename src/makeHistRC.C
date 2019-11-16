@@ -13,6 +13,7 @@
 
 //Local
 #include "include/checkMakeDir.h"
+#include "include/etaPhiFunc.h"
 #include "include/histDefUtility.h"
 #include "include/paramPropagator.h"
 #include "include/plotUtilities.h"
@@ -30,7 +31,7 @@ int makeHistRC(const std::string inFileName)
 
   std::cout << "LINE: " << __LINE__ << std::endl;
 
-  Float_t ptRC_, ptRhoRC_, ptRhoFlowRC_, ptSubRC_, ptSubFlowRC_, ptJet_, ptRhoJet_, ptRhoFlowJet_, ptRef_, ptRhoRef_, ptRhoFlowRef_;
+  Float_t ptRC_, phiRC_, evtPhiRC_, ptRhoRC_, ptRhoFlowRC_, ptSubRC_, ptSubFlowRC_, ptJet_, phiJet_, evtPhiJet_, ptRhoJet_, ptRhoFlowJet_, ptRef_, ptRhoRef_, ptRhoFlowRef_, phiRef_, evtPhiRef_;
   UInt_t etaPos_, etaPosJet_, etaPosRef_;
   Int_t centRC_, centJet_, centRef_, centPos_, centPosJet_, centPosRef_;
 
@@ -39,9 +40,11 @@ int makeHistRC(const std::string inFileName)
   params.setupFromROOT(inFile_p);
   const Int_t nCentBinsMax = 10;
   const Int_t nEtaBinsMax = 10;
+  const Int_t nEvtPhiBinsMax = 3;
 
   std::map<std::string, std::string> paramFound = params.getParamFound();
   const bool doJet = paramFound["IMBINPUT"].size() != 0;
+  const bool doEvt = paramFound["EVTINPUT"].size() != 0;
   const bool doRef = params.getImbRefPtStr().size() != 0;
   
   if(!params.checkNEtaBinsMax(nEtaBinsMax)) return 1;
@@ -50,9 +53,9 @@ int makeHistRC(const std::string inFileName)
   Int_t nCentBins = params.getNCentBins();
   Int_t nEtaBins = params.getNEtaBins();
 
-  const Int_t nPtBins = 3;
-  const Double_t ptBinsLow[nPtBins] = {50., 100., 200.};
-  const Double_t ptBinsHigh[nPtBins] = {100., 200., 500.};
+  const Int_t nPtBins = 4;
+  const Double_t ptBinsLow[nPtBins] = {50., 100., 200., 500.};
+  const Double_t ptBinsHigh[nPtBins] = {100., 200., 500., 1000.};
 
   std::cout << "LINE: " << __LINE__ << std::endl;
 
@@ -89,7 +92,7 @@ int makeHistRC(const std::string inFileName)
     jetRhoPtMax = jetTree_p->GetMaximum("ptRhoJet");
     jetRhoFlowPtMin = jetTree_p->GetMinimum("ptRhoFlowJet");
     jetRhoFlowPtMax = jetTree_p->GetMaximum("ptRhoFlowJet");
-    
+
     if(doRef){
       genJetTree_p = (TTree*)inFile_p->Get("genJetTree");
       
@@ -235,15 +238,18 @@ int makeHistRC(const std::string inFileName)
   }
 
   std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
-
   
   Double_t threeSigmaMax = -1;
   for(Int_t cI = 0; cI < nCentBins; ++cI){
     Int_t threeSigmaPos = 997*rcMinRhoPtVals[cI].size()/1000;
+    std::cout << "Threesigmapos: " << threeSigmaPos << ", " << rcMinRhoPtVals[cI].size() << std::endl;
+
+    std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
 
     if(rcMinRhoPtVals[cI][threeSigmaPos] > threeSigmaMax) threeSigmaMax = rcMinRhoPtVals[cI][threeSigmaPos];
   }
 
+  std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
 
   //  rcPtMax = rcPtVals[threeSigmaPos];
   //  rhoPtMax = rhoPtVals[threeSigmaPos];
@@ -256,6 +262,8 @@ int makeHistRC(const std::string inFileName)
   rhoFlowPtMin = TMath::Max(0., rhoFlowPtMin-1);
   rcMinRhoPtMin -= 1;
 
+  std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+
   threeSigmaMax = -1;
   for(Int_t cI = 0; cI < nCentBins; ++cI){
     Int_t threeSigmaPos = 997*rcMinRhoFlowPtVals[cI].size()/1000;
@@ -266,7 +274,7 @@ int makeHistRC(const std::string inFileName)
   rcMinRhoFlowPtMax = TMath::Max(threeSigmaMax, TMath::Abs(rcMinRhoFlowPtMin-1));
   rcMinRhoFlowPtMin -= 1;
 
-
+  std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
 
   if(doJet){
     ++jetRhoPtMax;
@@ -293,6 +301,8 @@ int makeHistRC(const std::string inFileName)
   inFile_p->Close();
   delete inFile_p;
 
+  std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
+
   std::vector<double> centBinsLow = params.getCentBinsLow();
   std::vector<double> centBinsHigh = params.getCentBinsHigh();
 
@@ -306,71 +316,82 @@ int makeHistRC(const std::string inFileName)
   checkMakeDir("output");
   checkMakeDir("output/" + dateStr);
   TFile* outFile_p = new TFile(outFileName.c_str(), "RECREATE");
-  TH1D* histRC_p[nCentBinsMax][nEtaBinsMax];
-  TH1D* histRho_p[nCentBinsMax][nEtaBinsMax];
-  TH1D* histRhoFlow_p[nCentBinsMax][nEtaBinsMax];
-  TH1D* histRCMinRho_p[nCentBinsMax][nEtaBinsMax];
-  TH1D* histRCMinRhoFlow_p[nCentBinsMax][nEtaBinsMax];
+  TH1D* histRC_p[nCentBinsMax][nEtaBinsMax][nEvtPhiBinsMax];
+  TH1D* histRho_p[nCentBinsMax][nEtaBinsMax][nEvtPhiBinsMax];
+  TH1D* histRhoFlow_p[nCentBinsMax][nEtaBinsMax][nEvtPhiBinsMax];
+  TH1D* histRCMinRho_p[nCentBinsMax][nEtaBinsMax][nEvtPhiBinsMax];
+  TH1D* histRCMinRhoFlow_p[nCentBinsMax][nEtaBinsMax][nEvtPhiBinsMax];
 
-  TH1D* histJetRho_p[nCentBinsMax][nEtaBinsMax][nPtBins];
-  TH1D* histJetRhoFlow_p[nCentBinsMax][nEtaBinsMax][nPtBins];
+  TH1D* histJetRho_p[nCentBinsMax][nEtaBinsMax][nEvtPhiBinsMax][nPtBins];
+  TH1D* histJetRhoFlow_p[nCentBinsMax][nEtaBinsMax][nEvtPhiBinsMax][nPtBins];
 
-  TH1D* histRefRho_p[nCentBinsMax][nEtaBinsMax][nPtBins];
-  TH1D* histRefRhoFlow_p[nCentBinsMax][nEtaBinsMax][nPtBins];
+  TH1D* histRefRho_p[nCentBinsMax][nEtaBinsMax][nEvtPhiBinsMax][nPtBins];
+  TH1D* histRefRhoFlow_p[nCentBinsMax][nEtaBinsMax][nEvtPhiBinsMax][nPtBins];
 
+  Int_t nEvtPhiBins = 1;
+  if(doEvt) nEvtPhiBins = 3;
   
-  TH2D* histRC_VCent_p[nEtaBinsMax];
-  TH2D* histRho_VCent_p[nEtaBinsMax];
-  TH2D* histRhoFlow_VCent_p[nEtaBinsMax];
-  TH2D* histRCMinRho_VCent_p[nEtaBinsMax];
-  TH2D* histRCMinRhoFlow_VCent_p[nEtaBinsMax];
+  TH2D* histRC_VCent_p[nEtaBinsMax][nEvtPhiBinsMax];
+  TH2D* histRho_VCent_p[nEtaBinsMax][nEvtPhiBinsMax];
+  TH2D* histRhoFlow_VCent_p[nEtaBinsMax][nEvtPhiBinsMax];
+  TH2D* histRCMinRho_VCent_p[nEtaBinsMax][nEvtPhiBinsMax];
+  TH2D* histRCMinRhoFlow_VCent_p[nEtaBinsMax][nEvtPhiBinsMax];
+
+  std::cout << "FILE, LINE: " << __FILE__ << ", " << __LINE__ << std::endl;
 
   for(Int_t eI = 0; eI < nEtaBins; ++eI){
     std::string etaStr = "Eta" + prettyString(etaBinsLow[eI], 1, true) + "to" + prettyString(etaBinsHigh[eI], 1, true);
 
-    histRC_VCent_p[eI] = new TH2D(("histRC_VCent_" + etaStr + "_h").c_str(), ";Centrality (%);Random Cone #Sigma p_{T}", 100, -0.5, 99.5, 100, rcPtMin, rcPtMax);
-    histRho_VCent_p[eI] = new TH2D(("histRho_VCent_" + etaStr + "_h").c_str(), ";Centrality (%);Random Cone #rho#times A", 100, -0.5, 99.5, 100, rhoPtMin, rhoPtMax);
-    histRhoFlow_VCent_p[eI] = new TH2D(("histRhoFlow_VCent_" + etaStr + "_h").c_str(), ";Centrality (%);Random Cone #rho#times A", 100, -0.5, 99.5, 100, rhoFlowPtMin, rhoFlowPtMax);
-    histRCMinRho_VCent_p[eI] = new TH2D(("histRCMinRho_VCent_" + etaStr + "_h").c_str(), ";Centrality (%);Random Cone #Sigma p_{T} - #rho#times A", 100, -0.5, 99.5, 100, rcMinRhoPtMin, rcMinRhoPtMax);
-    histRCMinRhoFlow_VCent_p[eI] = new TH2D(("histRCMinRhoFlow_VCent_" + etaStr + "_h").c_str(), ";Centrality (%);Random Cone #Sigma p_{T} - #rho#times A", 100, -0.5, 99.5, 100, rcMinRhoFlowPtMin, rcMinRhoFlowPtMax);
-    centerTitles({histRC_VCent_p[eI], histRho_VCent_p[eI], histRCMinRho_VCent_p[eI], histRhoFlow_VCent_p[eI], histRCMinRhoFlow_VCent_p[eI]});
+    for(Int_t epI = 0; epI < nEvtPhiBins; ++epI){
+      std::string epStr = "";
+      if(epI == 0) epStr = "FullPlane";
+      else if(epI == 1) epStr = "InPlane";
+      else if(epI == 2) epStr = "OutPlane";
 
-    for(Int_t cI = 0; cI < nCentBins; ++cI){
-      std::string centStr = "Cent" + std::to_string(((int)centBinsLow[cI])) + "to" + std::to_string(((int)centBinsHigh[cI]));
+      histRC_VCent_p[eI][epI] = new TH2D(("histRC_VCent_" + etaStr + "_" + epStr + "_h").c_str(), ";Centrality (%);Random Cone #Sigma p_{T}", 100, -0.5, 99.5, 100, rcPtMin, rcPtMax);
+      histRho_VCent_p[eI][epI] = new TH2D(("histRho_VCent_" + etaStr + "_" + epStr + "_h").c_str(), ";Centrality (%);Random Cone #rho#times A", 100, -0.5, 99.5, 100, rhoPtMin, rhoPtMax);
+      histRhoFlow_VCent_p[eI][epI] = new TH2D(("histRhoFlow_VCent_" + etaStr + "_" + epStr + "_h").c_str(), ";Centrality (%);Random Cone #rho#times A", 100, -0.5, 99.5, 100, rhoFlowPtMin, rhoFlowPtMax);
+      histRCMinRho_VCent_p[eI][epI] = new TH2D(("histRCMinRho_VCent_" + etaStr + "_" + epStr + "_h").c_str(), ";Centrality (%);Random Cone #Sigma p_{T} - #rho#times A", 100, -0.5, 99.5, 100, rcMinRhoPtMin, rcMinRhoPtMax);
+      histRCMinRhoFlow_VCent_p[eI][epI] = new TH2D(("histRCMinRhoFlow_VCent_" + etaStr + "_" + epStr + "_h").c_str(), ";Centrality (%);Random Cone #Sigma p_{T} - #rho#times A", 100, -0.5, 99.5, 100, rcMinRhoFlowPtMin, rcMinRhoFlowPtMax);
+
+      centerTitles({histRC_VCent_p[eI][epI], histRho_VCent_p[eI][epI], histRCMinRho_VCent_p[eI][epI], histRhoFlow_VCent_p[eI][epI], histRCMinRhoFlow_VCent_p[eI][epI]});
       
-      histRC_p[cI][eI] = new TH1D(("histRC_" + centStr + "_" + etaStr + "_h").c_str(), ";Random Cone #Sigma p_{T};Counts", 100, rcPtMin, rcPtMax);
-      histRho_p[cI][eI] = new TH1D(("histRho_" + centStr + "_" + etaStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, rhoPtMin, rhoPtMax);
-      histRhoFlow_p[cI][eI] = new TH1D(("histRhoFlow_" + centStr + "_" + etaStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, rhoFlowPtMin, rhoFlowPtMax);
-      histRCMinRho_p[cI][eI] = new TH1D(("histRCMinRho_" + centStr + "_" + etaStr + "_h").c_str(), ";Random Cone #Sigma p_{T} - #rho#times A;Counts", 100, rcMinRhoPtMin, rcMinRhoPtMax);
-      histRCMinRhoFlow_p[cI][eI] = new TH1D(("histRCMinRhoFlow_" + centStr + "_" + etaStr + "_h").c_str(), ";Random Cone #Sigma p_{T} - #rhoFlow#times A;Counts", 100, rcMinRhoFlowPtMin, rcMinRhoFlowPtMax);
-
-      std::vector<TH1*> histVect = {histRC_p[cI][eI], histRho_p[cI][eI], histRCMinRho_p[cI][eI], histRhoFlow_p[cI][eI], histRCMinRhoFlow_p[cI][eI]};
-
-      if(doJet){
-	for(Int_t pI = 0; pI < nPtBins; ++pI){	 	
-	  std::string ptStr = "Pt" + prettyString(ptBinsLow[pI], 1, true) + "to" + prettyString(ptBinsHigh[pI], 1, true);
-	  
-	  histJetRho_p[cI][eI][pI] = new TH1D(("histJetRho_" + centStr + "_" + etaStr + "_" + ptStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, jetRhoPtMin, jetRhoPtMax);
-	  histJetRhoFlow_p[cI][eI][pI] = new TH1D(("histJetRhoFlow_" + centStr + "_" + etaStr + "_" + ptStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, jetRhoFlowPtMin, jetRhoFlowPtMax);	
-
-	  histVect.push_back(histJetRho_p[cI][eI][pI]);
-	  histVect.push_back(histJetRhoFlow_p[cI][eI][pI]);
-	}
+      for(Int_t cI = 0; cI < nCentBins; ++cI){
+	std::string centStr = "Cent" + std::to_string(((int)centBinsLow[cI])) + "to" + std::to_string(((int)centBinsHigh[cI]));
 	
-	if(doRef){
+	histRC_p[cI][eI][epI] = new TH1D(("histRC_" + centStr + "_" + etaStr + "_" + epStr + "_h").c_str(), ";Random Cone #Sigma p_{T};Counts", 100, rcPtMin, rcPtMax);
+	histRho_p[cI][eI][epI] = new TH1D(("histRho_" + centStr + "_" + etaStr + "_" + epStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, rhoPtMin, rhoPtMax);
+	histRhoFlow_p[cI][eI][epI] = new TH1D(("histRhoFlow_" + centStr + "_" + etaStr + "_" + epStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, rhoFlowPtMin, rhoFlowPtMax);
+	histRCMinRho_p[cI][eI][epI] = new TH1D(("histRCMinRho_" + centStr + "_" + etaStr + "_" + epStr + "_h").c_str(), ";Random Cone #Sigma p_{T} - #rho#times A;Counts", 100, rcMinRhoPtMin, rcMinRhoPtMax);
+	histRCMinRhoFlow_p[cI][eI][epI] = new TH1D(("histRCMinRhoFlow_" + centStr + "_" + etaStr + "_" + epStr + "_h").c_str(), ";Random Cone #Sigma p_{T} - #rhoFlow#times A;Counts", 100, rcMinRhoFlowPtMin, rcMinRhoFlowPtMax);
+	
+	std::vector<TH1*> histVect = {histRC_p[cI][eI][epI], histRho_p[cI][eI][epI], histRCMinRho_p[cI][eI][epI], histRhoFlow_p[cI][eI][epI], histRCMinRhoFlow_p[cI][eI][epI]};
+	
+	if(doJet){
 	  for(Int_t pI = 0; pI < nPtBins; ++pI){	 	
 	    std::string ptStr = "Pt" + prettyString(ptBinsLow[pI], 1, true) + "to" + prettyString(ptBinsHigh[pI], 1, true);
-
-	    histRefRho_p[cI][eI][pI] = new TH1D(("histRefRho_" + centStr + "_" + etaStr + "_" + ptStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, refRhoPtMin, refRhoPtMax);
-	    histRefRhoFlow_p[cI][eI][pI] = new TH1D(("histRefRhoFlow_" + centStr + "_" + etaStr + "_" + ptStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, refRhoFlowPtMin, refRhoFlowPtMax);	
 	    
-	    histVect.push_back(histRefRho_p[cI][eI][pI]);
-	    histVect.push_back(histRefRhoFlow_p[cI][eI][pI]);
+	    histJetRho_p[cI][eI][epI][pI] = new TH1D(("histJetRho_" + centStr + "_" + etaStr + "_" + epStr + "_" + ptStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, jetRhoPtMin, jetRhoPtMax);
+	    histJetRhoFlow_p[cI][eI][epI][pI] = new TH1D(("histJetRhoFlow_" + centStr + "_" + etaStr + "_" + epStr + "_" + ptStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, jetRhoFlowPtMin, jetRhoFlowPtMax);	
+	    
+	    histVect.push_back(histJetRho_p[cI][eI][epI][pI]);
+	    histVect.push_back(histJetRhoFlow_p[cI][eI][epI][pI]);
+	  }
+	  
+	  if(doRef){
+	    for(Int_t pI = 0; pI < nPtBins; ++pI){	 	
+	      std::string ptStr = "Pt" + prettyString(ptBinsLow[pI], 1, true) + "to" + prettyString(ptBinsHigh[pI], 1, true);
+	      
+	      histRefRho_p[cI][eI][epI][pI] = new TH1D(("histRefRho_" + centStr + "_" + etaStr + "_" + epStr + "_" + ptStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, refRhoPtMin, refRhoPtMax);
+	      histRefRhoFlow_p[cI][eI][epI][pI] = new TH1D(("histRefRhoFlow_" + centStr + "_" + etaStr + "_" + epStr + "_" + ptStr + "_h").c_str(), ";Random Cone #rho#times A;Counts", 100, refRhoFlowPtMin, refRhoFlowPtMax);	
+	      
+	      histVect.push_back(histRefRho_p[cI][eI][epI][pI]);
+	      histVect.push_back(histRefRhoFlow_p[cI][eI][epI][pI]);
+	    }
 	  }
 	}
+	centerTitles(histVect);
       }
-      
-      centerTitles(histVect);
     }
   }
 
@@ -381,7 +402,9 @@ int makeHistRC(const std::string inFileName)
   rcTree_p->SetBranchStatus("centPos", 1);
   rcTree_p->SetBranchStatus("etaPos", 1);
   rcTree_p->SetBranchStatus("cent", 1);
+  if(doEvt) rcTree_p->SetBranchStatus("evtPhiRC", 1);
   rcTree_p->SetBranchStatus("ptRC", 1);
+  rcTree_p->SetBranchStatus("phiRC", 1);
   rcTree_p->SetBranchStatus("ptRhoRC", 1);
   rcTree_p->SetBranchStatus("ptRhoFlowRC", 1);
   rcTree_p->SetBranchStatus("ptSubRC", 1);
@@ -390,7 +413,9 @@ int makeHistRC(const std::string inFileName)
   rcTree_p->SetBranchAddress("centPos", &centPos_);
   rcTree_p->SetBranchAddress("etaPos", &etaPos_);
   rcTree_p->SetBranchAddress("cent", &centRC_);
+  if(doEvt) rcTree_p->SetBranchAddress("evtPhiRC", &evtPhiRC_);
   rcTree_p->SetBranchAddress("ptRC", &ptRC_);
+  rcTree_p->SetBranchAddress("phiRC", &phiRC_);
   rcTree_p->SetBranchAddress("ptRhoRC", &ptRhoRC_);
   rcTree_p->SetBranchAddress("ptRhoFlowRC", &ptRhoFlowRC_);
   rcTree_p->SetBranchAddress("ptSubRC", &ptSubRC_);
@@ -401,16 +426,20 @@ int makeHistRC(const std::string inFileName)
   
     jetTree_p->SetBranchStatus("*", 0);
     jetTree_p->SetBranchStatus("ptJet", 1);
+    jetTree_p->SetBranchStatus("phiJet", 1);
     jetTree_p->SetBranchStatus("centPos", 1);
     jetTree_p->SetBranchStatus("etaPos", 1);
     jetTree_p->SetBranchStatus("cent", 1);
+    if(doEvt) jetTree_p->SetBranchStatus("evtPhiJet", 1);
     jetTree_p->SetBranchStatus("ptRhoJet", 1);
     jetTree_p->SetBranchStatus("ptRhoFlowJet", 1);
     
     jetTree_p->SetBranchAddress("ptJet", &ptJet_);
+    jetTree_p->SetBranchAddress("phiJet", &phiJet_);
     jetTree_p->SetBranchAddress("centPos", &centPosJet_);
     jetTree_p->SetBranchAddress("etaPos", &etaPosJet_);
     jetTree_p->SetBranchAddress("cent", &centJet_);
+    if(doEvt) jetTree_p->SetBranchAddress("evtPhiJet", &evtPhiJet_);
     jetTree_p->SetBranchAddress("ptRhoJet", &ptRhoJet_);
     jetTree_p->SetBranchAddress("ptRhoFlowJet", &ptRhoFlowJet_);
 
@@ -419,16 +448,20 @@ int makeHistRC(const std::string inFileName)
       
       genJetTree_p->SetBranchStatus("*", 0);
       genJetTree_p->SetBranchStatus("ptRef", 1);
+      genJetTree_p->SetBranchStatus("phiRef", 1);
       genJetTree_p->SetBranchStatus("centPos", 1);
       genJetTree_p->SetBranchStatus("etaPos", 1);
       genJetTree_p->SetBranchStatus("cent", 1);
+      if(doEvt) jetTree_p->SetBranchStatus("evtPhiRef", 1);
       genJetTree_p->SetBranchStatus("ptRhoRef", 1);
       genJetTree_p->SetBranchStatus("ptRhoFlowRef", 1);
       
       genJetTree_p->SetBranchAddress("ptRef", &ptRef_);
+      genJetTree_p->SetBranchAddress("phiRef", &phiRef_);
       genJetTree_p->SetBranchAddress("centPos", &centPosRef_);
       genJetTree_p->SetBranchAddress("etaPos", &etaPosRef_);
       genJetTree_p->SetBranchAddress("cent", &centRef_);
+      if(doEvt) jetTree_p->SetBranchAddress("evtPhiRef", &evtPhiRef_);
       genJetTree_p->SetBranchAddress("ptRhoRef", &ptRhoRef_);
       genJetTree_p->SetBranchAddress("ptRhoFlowRef", &ptRhoFlowRef_);
     }
@@ -439,17 +472,29 @@ int makeHistRC(const std::string inFileName)
     if(entry%nDiv == 0) std::cout << " Entry " << entry << "/" << nEntries << std::endl;
     rcTree_p->GetEntry(entry);
 
-    histRC_p[centPos_][etaPos_]->Fill(ptRC_);
-    histRho_p[centPos_][etaPos_]->Fill(ptRhoRC_);
-    histRhoFlow_p[centPos_][etaPos_]->Fill(ptRhoFlowRC_);
-    histRCMinRho_p[centPos_][etaPos_]->Fill(ptSubRC_);
-    histRCMinRhoFlow_p[centPos_][etaPos_]->Fill(ptSubFlowRC_);
+    std::vector<int> evtPos = {0};
+    if(doEvt){
+      if(phiRC_ > TMath::Pi()/2.) phiRC_ -= TMath::Pi();
+      if(phiRC_ < -TMath::Pi()/2.) phiRC_ += TMath::Pi();
 
-    histRC_VCent_p[etaPos_]->Fill(centRC_, ptRC_);
-    histRho_VCent_p[etaPos_]->Fill(centRC_, ptRhoRC_);
-    histRhoFlow_VCent_p[etaPos_]->Fill(centRC_, ptRhoFlowRC_);
-    histRCMinRho_VCent_p[etaPos_]->Fill(centRC_, ptSubRC_);
-    histRCMinRhoFlow_VCent_p[etaPos_]->Fill(centRC_, ptSubFlowRC_);
+      Double_t deltaPhi = TMath::Abs(getDPHI(phiRC_, evtPhiRC_));
+      if(deltaPhi < TMath::Pi()/4. || deltaPhi > TMath::Pi()*3./4.) evtPos.push_back(1);
+      else evtPos.push_back(2);
+    }
+
+    for(unsigned int epI = 0; epI < evtPos.size(); ++epI){
+      histRC_p[centPos_][etaPos_][evtPos[epI]]->Fill(ptRC_);
+      histRho_p[centPos_][etaPos_][evtPos[epI]]->Fill(ptRhoRC_);
+      histRhoFlow_p[centPos_][etaPos_][evtPos[epI]]->Fill(ptRhoFlowRC_);
+      histRCMinRho_p[centPos_][etaPos_][evtPos[epI]]->Fill(ptSubRC_);
+      histRCMinRhoFlow_p[centPos_][etaPos_][evtPos[epI]]->Fill(ptSubFlowRC_);
+      
+      histRC_VCent_p[etaPos_][evtPos[epI]]->Fill(centRC_, ptRC_);
+      histRho_VCent_p[etaPos_][evtPos[epI]]->Fill(centRC_, ptRhoRC_);
+      histRhoFlow_VCent_p[etaPos_][evtPos[epI]]->Fill(centRC_, ptRhoFlowRC_);
+      histRCMinRho_VCent_p[etaPos_][evtPos[epI]]->Fill(centRC_, ptSubRC_);
+      histRCMinRhoFlow_VCent_p[etaPos_][evtPos[epI]]->Fill(centRC_, ptSubFlowRC_);
+    }
   }
   
   if(doJet){
@@ -465,9 +510,21 @@ int makeHistRC(const std::string inFileName)
       }
 
       if(ptPos < 0) continue;
-      
-      histJetRho_p[centPosJet_][etaPosJet_][ptPos]->Fill(ptRhoJet_);
-      histJetRhoFlow_p[centPosJet_][etaPosJet_][ptPos]->Fill(ptRhoFlowJet_);
+
+      std::vector<int> evtPos = {0};
+      if(doEvt){
+	if(phiJet_ > TMath::Pi()/2.) phiJet_ -= TMath::Pi();
+	if(phiJet_ < -TMath::Pi()/2.) phiJet_ += TMath::Pi();
+	
+	Double_t deltaPhi = TMath::Abs(getDPHI(phiJet_, evtPhiJet_));
+	if(deltaPhi < TMath::Pi()/4. || deltaPhi > TMath::Pi()*3./4.) evtPos.push_back(1);
+	else evtPos.push_back(2);
+      }
+
+      for(unsigned int epI = 0; epI < evtPos.size(); ++epI){      
+	histJetRho_p[centPosJet_][etaPosJet_][evtPos[epI]][ptPos]->Fill(ptRhoJet_);
+	histJetRhoFlow_p[centPosJet_][etaPosJet_][evtPos[epI]][ptPos]->Fill(ptRhoFlowJet_);
+      }
     }
     
     if(doRef){
@@ -484,8 +541,20 @@ int makeHistRC(const std::string inFileName)
 	
 	if(ptPos < 0) continue;
 
-	histRefRho_p[centPosRef_][etaPosRef_][ptPos]->Fill(ptRhoRef_);
-	histRefRhoFlow_p[centPosRef_][etaPosRef_][ptPos]->Fill(ptRhoFlowRef_);
+	std::vector<int> evtPos = {0};
+	if(doEvt){
+	  if(phiJet_ > TMath::Pi()/2.) phiJet_ -= TMath::Pi();
+	  if(phiJet_ < -TMath::Pi()/2.) phiJet_ += TMath::Pi();
+	  
+	  Double_t deltaPhi = TMath::Abs(getDPHI(phiJet_, evtPhiJet_));
+	  if(deltaPhi < TMath::Pi()/4. || deltaPhi > TMath::Pi()*3./4.) evtPos.push_back(1);
+	  else evtPos.push_back(2);
+	}
+	
+	for(unsigned int epI = 0; epI < evtPos.size(); ++epI){
+	  histRefRho_p[centPosRef_][etaPosRef_][evtPos[epI]][ptPos]->Fill(ptRhoRef_);
+	  histRefRhoFlow_p[centPosRef_][etaPosRef_][evtPos[epI]][ptPos]->Fill(ptRhoFlowRef_);
+	}
       }
     }
   }
@@ -496,51 +565,54 @@ int makeHistRC(const std::string inFileName)
   outFile_p->cd();
 
   for(Int_t eI = 0; eI < nEtaBins; ++eI){
-    histRC_VCent_p[eI]->Write("", TObject::kOverwrite);
-    delete histRC_VCent_p[eI];
-    
-    histRho_VCent_p[eI]->Write("", TObject::kOverwrite);
-    delete histRho_VCent_p[eI];
+    for(Int_t epI = 0; epI < nEvtPhiBins; ++epI){
 
-    histRhoFlow_VCent_p[eI]->Write("", TObject::kOverwrite);
-    delete histRhoFlow_VCent_p[eI];
-
-    histRCMinRho_VCent_p[eI]->Write("", TObject::kOverwrite);
-    delete histRCMinRho_VCent_p[eI];
-
-    histRCMinRhoFlow_VCent_p[eI]->Write("", TObject::kOverwrite);
-    delete histRCMinRhoFlow_VCent_p[eI];
-
-    for(Int_t cI = 0; cI < nCentBins; ++cI){
-      histRC_p[cI][eI]->Write("", TObject::kOverwrite);
-      delete histRC_p[cI][eI];
-
-      histRho_p[cI][eI]->Write("", TObject::kOverwrite);
-      delete histRho_p[cI][eI];
-
-      histRhoFlow_p[cI][eI]->Write("", TObject::kOverwrite);
-      delete histRhoFlow_p[cI][eI];
-
-      histRCMinRho_p[cI][eI]->Write("", TObject::kOverwrite);
-      delete histRCMinRho_p[cI][eI];
-
-      histRCMinRhoFlow_p[cI][eI]->Write("", TObject::kOverwrite);
-      delete histRCMinRhoFlow_p[cI][eI];
-
-      if(doJet){
-	for(Int_t pI = 0; pI < nPtBins; ++pI){
-	  histJetRho_p[cI][eI][pI]->Write("", TObject::kOverwrite);
-	  delete histJetRho_p[cI][eI][pI];
-	  
-	  histJetRhoFlow_p[cI][eI][pI]->Write("", TObject::kOverwrite);
-	  delete histJetRhoFlow_p[cI][eI][pI];
-	  
-	  if(doRef){
-	    histRefRho_p[cI][eI][pI]->Write("", TObject::kOverwrite);
-	    delete histRefRho_p[cI][eI][pI];
+      histRC_VCent_p[eI][epI]->Write("", TObject::kOverwrite);
+      delete histRC_VCent_p[eI][epI];
+      
+      histRho_VCent_p[eI][epI]->Write("", TObject::kOverwrite);
+      delete histRho_VCent_p[eI][epI];
+      
+      histRhoFlow_VCent_p[eI][epI]->Write("", TObject::kOverwrite);
+      delete histRhoFlow_VCent_p[eI][epI];
+      
+      histRCMinRho_VCent_p[eI][epI]->Write("", TObject::kOverwrite);
+      delete histRCMinRho_VCent_p[eI][epI];
+      
+      histRCMinRhoFlow_VCent_p[eI][epI]->Write("", TObject::kOverwrite);
+      delete histRCMinRhoFlow_VCent_p[eI][epI];
+      
+      for(Int_t cI = 0; cI < nCentBins; ++cI){
+	histRC_p[cI][eI][epI]->Write("", TObject::kOverwrite);
+	delete histRC_p[cI][eI][epI];
+	
+	histRho_p[cI][eI][epI]->Write("", TObject::kOverwrite);
+	delete histRho_p[cI][eI][epI];
+	
+	histRhoFlow_p[cI][eI][epI]->Write("", TObject::kOverwrite);
+	delete histRhoFlow_p[cI][eI][epI];
+	
+	histRCMinRho_p[cI][eI][epI]->Write("", TObject::kOverwrite);
+	delete histRCMinRho_p[cI][eI][epI];
+	
+	histRCMinRhoFlow_p[cI][eI][epI]->Write("", TObject::kOverwrite);
+	delete histRCMinRhoFlow_p[cI][eI][epI];
+	
+	if(doJet){
+	  for(Int_t pI = 0; pI < nPtBins; ++pI){
+	    histJetRho_p[cI][eI][epI][pI]->Write("", TObject::kOverwrite);
+	    delete histJetRho_p[cI][eI][epI][pI];
 	    
-	    histRefRhoFlow_p[cI][eI][pI]->Write("", TObject::kOverwrite);
-	    delete histRefRhoFlow_p[cI][eI][pI];
+	    histJetRhoFlow_p[cI][eI][epI][pI]->Write("", TObject::kOverwrite);
+	    delete histJetRhoFlow_p[cI][eI][epI][pI];
+	    
+	    if(doRef){
+	      histRefRho_p[cI][eI][epI][pI]->Write("", TObject::kOverwrite);
+	      delete histRefRho_p[cI][eI][epI][pI];
+	      
+	      histRefRhoFlow_p[cI][eI][epI][pI]->Write("", TObject::kOverwrite);
+	      delete histRefRhoFlow_p[cI][eI][epI][pI];
+	    }
 	  }
 	}
       }

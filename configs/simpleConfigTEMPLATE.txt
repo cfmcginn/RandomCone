@@ -10,11 +10,15 @@ CENTBINSHIGH,10,20,30,40,50
 #Define your constituent tree, type (array or vector), double or float, and var names
 RCINPUT,pfcandAnalyzer/pfTree,vector,float,,pfPt,pfPhi,pfEta
 
+IMBINPUT,akCs4PU3PFFlowJetAnalyzer/t,array,float,,nref,jtpt,jtphi,jteta,,,,,,,,
+EVTINPUT,hiEvtAnalyzer/HiTree,array,hiNevtPlane,hiEvtPlanes,8
+
+
 #Define random cone params
 NRC,2
 RCR,RCRVAL
 PTCUT,PTCUTVAL
-ISMC,1
+ISMC,0
 
 #Define your centrality tree, table file, and variable(s), 
 CENTINPUT,hiEvtAnalyzer/HiTree,input/cmsHiBinToCent.txt,int,hiBin
@@ -24,4 +28,5 @@ DONCOLLWEIGHTS,1
 NRHOMC,1000
 
 #Define your rho tree, array or vector, float or double, rhoVar, etaVar or etaVarMin and Max, etc.
-RHOINPUT,hiPuRhoR3Analyzer/t,vector,double,NONE,rho,etaMin,etaMax
+RHOINPUT,hiPuRhoR3Analyzer/t,vector,double,NONE,rho,etaMin,etaMax,
+RHOFLOWINPUT,rhoFlowFitParams

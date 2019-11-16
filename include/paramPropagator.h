@@ -503,8 +503,9 @@ void paramPropagator::setRCInput(std::string inStr)
 
 void paramPropagator::setEvtInput(std::string inStr)
 {
+
   std::vector<std::string> tempVect = strToVect(inStr);
-  if(tempVect.size() != 3) std::cout << "WARNING PARAMPROPAGATOR: EVTINPUT IS INVALID SIZE. return 1";
+  if(tempVect.size() != 6) std::cout << "WARNING PARAMPROPAGATOR: EVTINPUT IS INVALID SIZE. return 1";
   else{
     evtInStr = tempVect[1];
     if(isStrSame(tempVect[2], "vector")) isVectorEvt = true;

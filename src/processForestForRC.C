@@ -128,6 +128,8 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
   std::string evtNVarStr = params.getEvtNVarStr();
   std::string evtVarStr = params.getEvtVarStr();
   const int evtPos = params.getEvtPos();
+
+  std::cout << "EVT : " << isVectorEvt << std::endl;
   
   //Imb in tree
   const bool doJet = paramFound["IMBINPUT"].size() != 0;  
@@ -390,6 +392,8 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
     hbheTree_p->SetBranchAddress("HBHENoiseFilterResultRun2Loose", &HBHENoiseFilterResultRun2Loose);
   }
 
+  std::vector<std::string> allTrees = {rcInStr, centInStr, rhoInStr};
+
   TTree* evtTreeIn_p = NULL;
   TObjArray* evtListOfBranchesArr = NULL;
   std::map<std::string, bool> evtListOfBranchesMap;
@@ -408,14 +412,6 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
     imbListOfBranchesArr = imbTreeIn_p->GetListOfBranches();
     for(Int_t bI = 0; bI < imbListOfBranchesArr->GetEntries(); ++bI){
       imbListOfBranchesMap[imbListOfBranchesArr->At(bI)->GetName()] = true;
-    }
-  }
-
-  if(doEvt){
-    evtTreeIn_p = (TTree*)inFile_p->Get(evtInStr.c_str());
-    evtListOfBranchesArr = evtTreeIn_p->GetListOfBranches();
-    for(Int_t bI = 0; bI < evtListOfBranchesArr->GetEntries(); ++bI){
-      evtListOfBranchesMap[evtListOfBranchesArr->At(bI)->GetName()] = true;
     }
   }
   
@@ -440,20 +436,7 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
       imbTreeIn_p->SetBranchStatus(iter.c_str(), 1);
     }
   }
-  
-  if(doEvt){
-    evtTreeIn_p->SetBranchStatus("*", 0);
-    for(auto const & iter : evtBranchNames){
-      if(iter.size() == 0) continue;
-      
-      if(evtListOfBranchesMap.count(iter) == 0){
-	std::cout << "Requested branch \'" << iter << "\' not found in ttree \'" << evtInStr << "\'. please check. return 1" << std::endl;
-	return 1;
-      }
-      evtTreeIn_p->SetBranchStatus(iter.c_str(), 1);
-    }
-  }
-  
+    
   TTree* centTreeIn_p = (TTree*)inFile_p->Get(centInStr.c_str());
   TObjArray* centListOfBranchesArr = centTreeIn_p->GetListOfBranches();
   std::map<std::string, bool> centListOfBranchesMap;
@@ -469,6 +452,30 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
     }
     centTreeIn_p->SetBranchStatus(iter.c_str(), 1);
   }
+
+  if(doEvt){
+    if(isStrSame(centInStr, evtInStr)) evtTreeIn_p = centTreeIn_p;
+    else evtTreeIn_p = (TTree*)inFile_p->Get(evtInStr.c_str());
+
+    evtListOfBranchesArr = evtTreeIn_p->GetListOfBranches();
+    for(Int_t bI = 0; bI < evtListOfBranchesArr->GetEntries(); ++bI){
+      evtListOfBranchesMap[evtListOfBranchesArr->At(bI)->GetName()] = true;
+    }
+
+    if(!isStrSame(centInStr, evtInStr)) evtTreeIn_p->SetBranchStatus("*", 0);
+    for(auto const & iter : evtBranchNames){
+      if(iter.size() == 0) continue;
+      
+      if(evtListOfBranchesMap.count(iter) == 0){
+	std::cout << "Requested branch \'" << iter << "\' not found in ttree \'" << evtInStr << "\'. please check. return 1" << std::endl;
+	return 1;
+      }
+
+      std::cout << "BUILDING TREE: " << iter << std::endl;
+      evtTreeIn_p->SetBranchStatus(iter.c_str(), 1);
+    }
+  }
+
 
   TTree* rhoTreeIn_p = (TTree*)inFile_p->Get(rhoInStr.c_str());
   TObjArray* rhoListOfBranchesArr = rhoTreeIn_p->GetListOfBranches();
@@ -582,6 +589,8 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
 
   if(doEvt){
     if(!isVectorEvt){
+      std::cout << "BRANCHES SET: " << evtNVarStr << ", " << evtVarStr << std::endl;
+
       evtTreeIn_p->SetBranchAddress(evtNVarStr.c_str(), &nEvt_);
       evtTreeIn_p->SetBranchAddress(evtVarStr.c_str(), evtPhi_);
     }
@@ -662,16 +671,19 @@ int processForestForRC(std::string inFileName, std::string paramFileName)
       if(!HBHENoiseFilterResultRun2Loose) continue;
     }
     
-    if(doEvt) evtTreeIn_p->GetEntry(entry);
+    if(doEvt && !isStrSame(centInStr, evtInStr)) evtTreeIn_p->GetEntry(entry);
     rcTreeIn_p->GetEntry(entry);
     centTreeIn_p->GetEntry(entry);
     rhoTreeIn_p->GetEntry(entry);
     if(doJet) imbTreeIn_p->GetEntry(entry);
     
     outEntry = entry;
-
+  
     if(doEvt){
-      if(nEvt_ < evtPos) continue;
+      if(nEvt_ < evtPos){
+	std::cout << "EVTPOS FAILURE CONTINUE " << nEvt_ << "/" << evtPos << std::endl;
+	continue;
+      }
 
       evtPhiRC = evtPhi_[evtPos];
       evtPhiJet = evtPhi_[evtPos];
